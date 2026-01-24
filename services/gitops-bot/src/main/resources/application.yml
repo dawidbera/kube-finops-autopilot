@@ -1,0 +1,25 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: gitops-bot
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: gitops-bot-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "io.kubefinops.*"
+
+gitops:
+  repository-url: https://github.com/example/gitops-repo.git
+  target-branch: main
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus

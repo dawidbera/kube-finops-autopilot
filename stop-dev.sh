@@ -16,6 +16,6 @@ echo "📉 Bringing down infrastructure..."
 docker compose -f infra/docker-compose-lite.yml down
 
 echo "🧹 Cleaning up logs..."
-rm -f recommender.log policy.log
+rm -f recommender.log policy.log gitops-bot.log
 
 echo "✅ Done."

@@ -44,8 +44,13 @@ echo "🏃 Starting Policy Service..."
 POL_PID=$!
 echo "   [PID: $POL_PID] Logs: tail -f policy.log"
 
+echo "🏃 Starting GitOps Bot..."
+./mvnw spring-boot:run -pl services/gitops-bot > gitops-bot.log 2>&1 &
+BOT_PID=$!
+echo "   [PID: $BOT_PID] Logs: tail -f gitops-bot.log"
+
 # Save PIDs to a file for easy stopping later
-echo "$REC_PID $POL_PID" > .services.pids
+echo "$REC_PID $POL_PID $BOT_PID" > .services.pids
 
 echo ""
 echo "✅ Environment is UP and running!"
