@@ -14,19 +14,19 @@ To run the microservices locally (with Kafka and MongoDB):
 
 1. **Start Development Environment**:
    ```bash
-   ./start-dev.sh
+   ./scripts/start-dev.sh
    ```
    This script builds the services, starts the infrastructure (Kafka, Mongo), and runs the applications.
 
 2. **Check Status**:
    ```bash
-   ./check-mongo.sh
+   ./scripts/check-mongo.sh
    ```
    Queries MongoDB to see generated recommendations.
 
 3. **Stop Environment**:
    ```bash
-   ./stop-dev.sh
+   ./scripts/stop-dev.sh
    ```
 
 ## Repository Structure

@@ -6,13 +6,13 @@
 set -e
 
 echo "🚀 Starting infrastructure (Kafka, MongoDB, MinIO)..."
-docker compose -f infra/docker-compose-lite.yml up -d
+docker compose -f ../infra/docker-compose-lite.yml up -d
 
 echo "⏳ Waiting for Kafka & Mongo to be ready..."
 sleep 10
 
 echo "🛡️ Initializing MongoDB Policies..."
-docker compose -f infra/docker-compose-lite.yml exec -T mongodb mongosh kubefinops --quiet --eval '
+docker compose -f ../infra/docker-compose-lite.yml exec -T mongodb mongosh kubefinops --quiet --eval '
 db.policies.deleteMany({});
 db.policies.insertOne({
   name: "Global Budget Limit",
@@ -32,6 +32,7 @@ db.policies.insertOne({
 echo "   Policies seeded successfully."
 
 echo "🔨 Building project..."
+cd ..
 ./mvnw clean install -DskipTests
 
 echo "🏃 Starting Recommender Service..."
@@ -57,5 +58,5 @@ echo "✅ Environment is UP and running!"
 echo "   - Infrastructure: Docker (Kafka, Mongo, MinIO)"
 echo "   - Services: Recommender & Policy (Background)"
 echo ""
-echo "👉 Use './check-mongo.sh' to watch recommendations in real-time."
-echo "👉 Use './stop-dev.sh' to stop everything."
+echo "👉 Use './scripts/check-mongo.sh' to watch recommendations in real-time."
+echo "👉 Use './scripts/stop-dev.sh' to stop everything."
