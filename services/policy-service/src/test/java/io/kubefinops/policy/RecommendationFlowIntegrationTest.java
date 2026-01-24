@@ -66,6 +66,8 @@ class RecommendationFlowIntegrationTest {
                 .workloadRef("deployment/test-app")
                 .namespace("prod")
                 .suggestedResources(Map.of("cpu", "100m", "memory", "128Mi"))
+                .estimatedMonthlySavings(10.0)
+                .currency("USD")
                 .createdAt(Instant.now())
                 .build();
 

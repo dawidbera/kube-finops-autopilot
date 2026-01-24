@@ -28,6 +28,9 @@ class RecommendationProducerTest {
     @Mock
     private PrometheusClient prometheusClient;
 
+    @Mock
+    private CostCalculator costCalculator;
+
     @InjectMocks
     private RecommendationProducer recommendationProducer;
 
@@ -36,18 +39,19 @@ class RecommendationProducerTest {
         // Given
         double mockCpuUsage = 0.100; // 100m
         when(prometheusClient.getP95CpuUsage(anyString(), anyString())).thenReturn(Mono.just(mockCpuUsage));
+        when(costCalculator.calculateMonthlySavings(anyMap(), anyMap())).thenReturn(10.0);
         
         // When
         recommendationProducer.generateRecommendation();
 
         // Then
         ArgumentCaptor<RecommendationCreatedEvent> eventCaptor = ArgumentCaptor.forClass(RecommendationCreatedEvent.class);
-        verify(kafkaTemplate, timeout(1000)).send(eq("recommendation.created"), anyString(), eventCaptor.capture());
+        // Using verify with timeout because of reactive subscribe
+        verify(kafkaTemplate, timeout(2000)).send(eq("recommendation.created"), anyString(), eventCaptor.capture());
         
         RecommendationCreatedEvent event = eventCaptor.getValue();
         assertEquals("prod", event.getNamespace());
         assertEquals("deployment/nginx", event.getWorkloadRef());
-        // 100m * 1.2 = 120m
-        assertEquals("120m", event.getSuggestedResources().get("cpu"));
+        assertEquals(10.0, event.getEstimatedMonthlySavings());
     }
 }

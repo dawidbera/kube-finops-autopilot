@@ -24,6 +24,8 @@ public class Recommendation {
     private Map<String, String> currentResources;
     private Map<String, String> suggestedResources;
     private Double confidenceScore;
+    private Double estimatedMonthlySavings;
+    private String currency;
     private Instant createdAt;
     
     // Status field for future processing (e.g. PENDING, APPROVED, REJECTED)

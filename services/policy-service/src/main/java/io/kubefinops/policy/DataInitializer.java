@@ -23,6 +23,7 @@ public class DataInitializer implements CommandLineRunner {
                     .name("Global Resource Limit")
                     .maxCpu("1000m")
                     .maxMemory("2Gi")
+                    .minMonthlySavings(5.0) // Must save at least $5
                     .enabled(true)
                     .build();
             

@@ -18,6 +18,7 @@ public class RecommendationProducer {
 
     private final KafkaTemplate<String, RecommendationCreatedEvent> kafkaTemplate;
     private final io.kubefinops.recommender.client.PrometheusClient prometheusClient;
+    private final CostCalculator costCalculator;
     private static final String TOPIC = "recommendation.created";
 
     @Scheduled(fixedRate = 30000)
@@ -30,18 +31,25 @@ public class RecommendationProducer {
                     double suggestedCpu = cpuUsage * 1.2;
                     String suggestedCpuStr = String.format("%.0fm", suggestedCpu * 1000);
 
+                    Map<String, String> currentResources = Map.of("cpu", "500m", "memory", "512Mi");
+                    Map<String, String> suggestedResources = Map.of("cpu", suggestedCpuStr, "memory", "256Mi");
+
+                    double monthlySavings = costCalculator.calculateMonthlySavings(currentResources, suggestedResources);
+
                     RecommendationCreatedEvent event = RecommendationCreatedEvent.builder()
                             .id(UUID.randomUUID().toString())
                             .workloadRef("deployment/" + deployment)
                             .namespace(namespace)
-                            .currentResources(Map.of("cpu", "500m", "memory", "512Mi"))
-                            .suggestedResources(Map.of("cpu", suggestedCpuStr, "memory", "256Mi"))
+                            .currentResources(currentResources)
+                            .suggestedResources(suggestedResources)
                             .confidenceScore(0.90)
+                            .estimatedMonthlySavings(monthlySavings)
+                            .currency("USD")
                             .createdAt(Instant.now())
                             .build();
 
-                    log.info("Sending recommendation for {} based on P95 usage ({}): {}", 
-                            deployment, cpuUsage, event.getId());
+                    log.info("Sending recommendation for {} (Potential savings: ${}): {}", 
+                            deployment, String.format("%.2f", monthlySavings), event.getId());
                     kafkaTemplate.send(TOPIC, event.getId(), event);
                 });
     }

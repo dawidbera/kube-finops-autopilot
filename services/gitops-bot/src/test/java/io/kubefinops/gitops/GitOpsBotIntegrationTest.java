@@ -52,6 +52,8 @@ class GitOpsBotIntegrationTest {
                 .workloadRef("deployment/nginx-app")
                 .namespace("test-ns")
                 .approvedResources(Map.of("cpu", "300m", "memory", "1Gi"))
+                .estimatedMonthlySavings(25.50)
+                .currency("USD")
                 .approvedAt(Instant.now())
                 .build();
 

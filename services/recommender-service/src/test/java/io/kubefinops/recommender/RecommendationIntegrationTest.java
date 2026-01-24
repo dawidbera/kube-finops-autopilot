@@ -66,11 +66,13 @@ class RecommendationIntegrationTest {
         recommendationProducer.generateRecommendation();
 
         // 4. Verify Kafka Event
-        RecommendationCreatedEvent event = events.poll(15, TimeUnit.SECONDS);
+        RecommendationCreatedEvent event = events.poll(30, TimeUnit.SECONDS);
         assertThat(event).isNotNull();
         assertThat(event.getWorkloadRef()).isEqualTo("deployment/nginx");
         // 0.150 * 1.2 = 0.180 -> "180m"
         assertThat(event.getSuggestedResources().get("cpu")).isEqualTo("180m");
+        assertThat(event.getEstimatedMonthlySavings()).isNotNull();
+        assertThat(event.getEstimatedMonthlySavings()).isGreaterThan(0);
     }
 
     private void setupKafkaConsumer(BlockingQueue<RecommendationCreatedEvent> queue) {

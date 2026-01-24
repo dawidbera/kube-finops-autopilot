@@ -35,6 +35,8 @@ public class RecommendationListener {
                 .currentResources(event.getCurrentResources())
                 .suggestedResources(event.getSuggestedResources())
                 .confidenceScore(event.getConfidenceScore())
+                .estimatedMonthlySavings(event.getEstimatedMonthlySavings())
+                .currency(event.getCurrency())
                 .createdAt(event.getCreatedAt())
                 .status("PENDING")
                 .build();
@@ -50,6 +52,8 @@ public class RecommendationListener {
                     .workloadRef(event.getWorkloadRef())
                     .namespace(event.getNamespace())
                     .approvedResources(event.getSuggestedResources())
+                    .estimatedMonthlySavings(event.getEstimatedMonthlySavings())
+                    .currency(event.getCurrency())
                     .approvedAt(Instant.now())
                     .build();
             

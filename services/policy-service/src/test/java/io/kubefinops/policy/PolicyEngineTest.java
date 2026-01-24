@@ -88,4 +88,38 @@ class PolicyEngineTest {
         
         assertFalse(policyEngine.validate(rec));
     }
+
+    @Test
+    void shouldRejectWhenSavingsBelowThreshold() {
+        Policy policy = Policy.builder()
+                .minMonthlySavings(10.0)
+                .build();
+        
+        when(policyRepository.findByNamespaceOrNamespaceIsNull("prod")).thenReturn(List.of(policy));
+        
+        Recommendation rec = Recommendation.builder()
+                .namespace("prod")
+                .suggestedResources(Map.of("cpu", "100m"))
+                .estimatedMonthlySavings(5.0)
+                .build();
+        
+        assertFalse(policyEngine.validate(rec));
+    }
+
+    @Test
+    void shouldApproveWhenSavingsAboveThreshold() {
+        Policy policy = Policy.builder()
+                .minMonthlySavings(10.0)
+                .build();
+        
+        when(policyRepository.findByNamespaceOrNamespaceIsNull("prod")).thenReturn(List.of(policy));
+        
+        Recommendation rec = Recommendation.builder()
+                .namespace("prod")
+                .suggestedResources(Map.of("cpu", "100m"))
+                .estimatedMonthlySavings(15.0)
+                .build();
+        
+        assertTrue(policyEngine.validate(rec));
+    }
 }

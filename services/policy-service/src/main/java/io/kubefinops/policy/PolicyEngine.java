@@ -54,6 +54,15 @@ public class PolicyEngine {
                 return false;
             }
         }
+
+        // Check Savings Threshold
+        if (policy.getMinMonthlySavings() != null && recommendation.getEstimatedMonthlySavings() != null) {
+            if (recommendation.getEstimatedMonthlySavings() < policy.getMinMonthlySavings()) {
+                log.warn("Policy {} violated: Estimated savings ${} is below threshold ${}", 
+                        policy.getName(), recommendation.getEstimatedMonthlySavings(), policy.getMinMonthlySavings());
+                return false;
+            }
+        }
         
         return true;
     }

@@ -22,7 +22,8 @@ public class RecommendationApprovedListener {
         log.info("2. Creating new branch: fix/rightsize-{}", event.getRecommendationId().substring(0, 8));
         
         // Real logic simulation:
-        manifestService.updateManifest(event.getWorkloadRef(), event.getNamespace(), event.getApprovedResources());
+        manifestService.updateManifest(event.getWorkloadRef(), event.getNamespace(), event.getApprovedResources(), 
+                event.getEstimatedMonthlySavings(), event.getCurrency());
         
         log.info("4. Committing changes...");
         log.info("5. Pushing to origin...");

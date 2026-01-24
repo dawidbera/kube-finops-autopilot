@@ -27,7 +27,7 @@ class ManifestServiceTest {
         Map<String, String> resources = Map.of("cpu", "250m", "memory", "512Mi");
 
         // When
-        manifestService.updateManifest(workloadRef, namespace, resources);
+        manifestService.updateManifest(workloadRef, namespace, resources, 15.0, "USD");
 
         // Then
         Path expectedFile = tempDir.resolve(namespace).resolve("deployment-test-app.yaml");
@@ -39,6 +39,7 @@ class ManifestServiceTest {
         assertTrue(content.contains("namespace: dev-test"));
         assertTrue(content.contains("cpu: 250m"));
         assertTrue(content.contains("memory: 512Mi"));
+        assertTrue(content.contains("Estimated Monthly Savings: 15.00 USD"));
         
         // Cleanup after test
         Files.deleteIfExists(expectedFile);

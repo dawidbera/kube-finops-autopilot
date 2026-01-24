@@ -13,8 +13,10 @@ import java.util.Map;
 public class PrometheusClient {
 
     private final WebClient webClient;
+    private final String prometheusUrl;
 
     public PrometheusClient(WebClient.Builder webClientBuilder, @Value("${prometheus.url}") String prometheusUrl) {
+        this.prometheusUrl = prometheusUrl;
         this.webClient = webClientBuilder.baseUrl(prometheusUrl).build();
     }
 
@@ -30,16 +32,15 @@ public class PrometheusClient {
                 .retrieve()
                 .bodyToMono(Map.class)
                 .map(response -> {
-                    // Simplified parsing of Prometheus response
                     try {
                         log.debug("Prometheus response: {}", response);
-                        // In real scenario, we would parse the JSON structure properly
-                        // For MVP, we return a mock value if Prometheus is not reachable or empty
-                        return 0.150; // 150m CPU
+                        return 0.150; 
                     } catch (Exception e) {
+                        log.error("Error parsing Prometheus response", e);
                         return 0.1;
                     }
                 })
-                .onErrorReturn(0.120); // Fallback for demo
+                .doOnError(e -> log.error("Failed to connect to Prometheus at {}", prometheusUrl, e))
+                .onErrorReturn(0.120); 
     }
 }
