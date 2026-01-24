@@ -8,4 +8,5 @@ target/
 *.iml
 .vscode/
 .DS_Store
+.services.pids
 !maven-wrapper.jar
