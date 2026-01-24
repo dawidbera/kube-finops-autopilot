@@ -44,15 +44,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: service-jars
-          path: jars
-          
-      - name: Prepare Docker Build
-        run: |
-          mkdir -p services/${{ matrix.service }}/target
-          # Artifacts are downloaded into 'jars' folder, preserving the 'services/...' structure
-          cp jars/services/${{ matrix.service }}/target/*.jar services/${{ matrix.service }}/target/
+          path: .
           
       - name: Build Docker Image (Dry Run)
         run: |
           cd services/${{ matrix.service }}
+          # The JAR file is already in services/${{ matrix.service }}/target/ due to preserved path in artifact
           docker build -t kubefinops/${{ matrix.service }}:latest .
+          echo "Docker image for ${{ matrix.service }} built successfully (simulated push)"
