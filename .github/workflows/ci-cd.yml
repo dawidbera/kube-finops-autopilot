@@ -23,12 +23,23 @@ jobs:
         run: |
           ./mvnw clean install
           
-      - name: Upload Build Artifacts
+      - name: Upload Recommender Service Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: service-jars
-          path: |
-            services/*/target/*.jar
+          name: recommender-service-jar
+          path: services/recommender-service/target/*.jar
+
+      - name: Upload Policy Service Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: policy-service-jar
+          path: services/policy-service/target/*.jar
+
+      - name: Upload GitOps Bot Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitops-bot-jar
+          path: services/gitops-bot/target/*.jar
 
   docker-build:
     needs: build-and-test
@@ -40,21 +51,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Download Artifacts
+      - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
-          name: service-jars
-          path: .
-
-      - name: Display structure of downloaded files
-        run: ls -R
+          name: ${{ matrix.service }}-jar
+          path: services/${{ matrix.service }}/target
           
       - name: Build Docker Image (Dry Run)
         run: |
-          # The artifact likely contains 'services/service-name/target/file.jar'
-          # but let's make sure we are in the right place
           cd services/${{ matrix.service }}
-          # Check if target exists here
-          ls -d target || echo "Target directory NOT found in $(pwd)"
           docker build -t kubefinops/${{ matrix.service }}:latest .
+          echo "Docker image for ${{ matrix.service }} built successfully"
           echo "Docker image for ${{ matrix.service }} built successfully (simulated push)"
