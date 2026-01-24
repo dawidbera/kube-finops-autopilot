@@ -37,7 +37,7 @@ public class PolicyEngine {
     private boolean checkPolicy(Recommendation recommendation, Policy policy) {
         Map<String, String> suggested = recommendation.getSuggestedResources();
         
-        // Simple CPU check (basic string comparison for now, to be improved)
+        // Check CPU
         if (policy.getMaxCpu() != null && suggested.containsKey("cpu")) {
             if (isExceeding(suggested.get("cpu"), policy.getMaxCpu())) {
                 log.warn("Policy {} violated: Suggested CPU {} exceeds limit {}", 
@@ -45,26 +45,46 @@ public class PolicyEngine {
                 return false;
             }
         }
+
+        // Check Memory
+        if (policy.getMaxMemory() != null && suggested.containsKey("memory")) {
+            if (isExceeding(suggested.get("memory"), policy.getMaxMemory())) {
+                log.warn("Policy {} violated: Suggested Memory {} exceeds limit {}", 
+                        policy.getName(), suggested.get("memory"), policy.getMaxMemory());
+                return false;
+            }
+        }
         
         return true;
     }
 
-    // Placeholder for K8s resource comparison logic
     private boolean isExceeding(String suggested, String limit) {
-        // Very basic logic for MVP: just compare raw strings or simple numeric values if possible
         try {
             double sVal = parseResource(suggested);
             double lVal = parseResource(limit);
             return sVal > lVal;
         } catch (Exception e) {
+            log.error("Error parsing resources: {} vs {}", suggested, limit);
             return false; 
         }
     }
 
     private double parseResource(String value) {
-        if (value.endsWith("m")) {
-            return Double.parseDouble(value.replace("m", ""));
+        String cleanValue = value.toLowerCase().trim();
+        if (cleanValue.endsWith("m")) {
+            return Double.parseDouble(cleanValue.replace("m", ""));
+        } else if (cleanValue.endsWith("gi")) {
+            return Double.parseDouble(cleanValue.replace("gi", "")) * 1024 * 1024 * 1024;
+        } else if (cleanValue.endsWith("mi")) {
+            return Double.parseDouble(cleanValue.replace("mi", "")) * 1024 * 1024;
+        } else if (cleanValue.endsWith("ki")) {
+            return Double.parseDouble(cleanValue.replace("ki", "")) * 1024;
         }
-        return Double.parseDouble(value) * 1000;
+        // Assume raw number is bytes or full CPU units
+        try {
+            return Double.parseDouble(cleanValue) * 1000;
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 }

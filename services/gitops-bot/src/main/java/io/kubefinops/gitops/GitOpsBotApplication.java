@@ -1,14 +1,11 @@
 package io.kubefinops.gitops;
 
-import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.context.annotation.ComponentScan;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootConfiguration
-@EnableAutoConfiguration
-@ComponentScan
+@SpringBootApplication
 public class GitOpsBotApplication {
     public static void main(String[] args) {
-        org.springframework.boot.SpringApplication.run(GitOpsBotApplication.class, args);
+        SpringApplication.run(GitOpsBotApplication.class, args);
     }
 }

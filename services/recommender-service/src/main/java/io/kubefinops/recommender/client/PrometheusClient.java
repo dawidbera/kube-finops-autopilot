@@ -25,8 +25,8 @@ public class PrometheusClient {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/api/v1/query")
-                        .queryParam("query", query)
-                        .build())
+                        .queryParam("query", "{query}") // Use a placeholder
+                        .build(query)) // Pass the real query as a variable to avoid expansion of its own curly braces
                 .retrieve()
                 .bodyToMono(Map.class)
                 .map(response -> {

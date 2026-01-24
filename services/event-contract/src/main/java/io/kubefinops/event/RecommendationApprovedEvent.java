@@ -15,6 +15,7 @@ import java.util.Map;
 public class RecommendationApprovedEvent {
     private String recommendationId;
     private String workloadRef;
+    private String namespace;
     private Map<String, String> approvedResources;
     private String approvedBy;
     private Instant approvedAt;

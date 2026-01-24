@@ -48,6 +48,7 @@ public class RecommendationListener {
             RecommendationApprovedEvent approvedEvent = RecommendationApprovedEvent.builder()
                     .recommendationId(event.getId())
                     .workloadRef(event.getWorkloadRef())
+                    .namespace(event.getNamespace())
                     .approvedResources(event.getSuggestedResources())
                     .approvedAt(Instant.now())
                     .build();
