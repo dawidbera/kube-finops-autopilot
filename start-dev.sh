@@ -1,16 +1,35 @@
 #!/bin/bash
 
 # KubeFinOps Autopilot - Local Dev Start Script
-# This script starts the infrastructure and microservices in background.
+# This script starts the infrastructure, microservices, and initializes policies.
 
 set -e
 
 echo "🚀 Starting infrastructure (Kafka, MongoDB, MinIO)..."
 docker compose -f infra/docker-compose-lite.yml up -d
 
-echo "⏳ Waiting for Kafka to be ready..."
-# Simple sleep to ensure Kafka is up before apps start
+echo "⏳ Waiting for Kafka & Mongo to be ready..."
 sleep 10
+
+echo "🛡️ Initializing MongoDB Policies..."
+docker compose -f infra/docker-compose-lite.yml exec -T mongodb mongosh kubefinops --quiet --eval '
+db.policies.deleteMany({});
+db.policies.insertOne({
+  name: "Global Budget Limit",
+  namespace: null,
+  maxCpu: "1000m",
+  maxMemory: "2Gi",
+  enabled: true
+});
+db.policies.insertOne({
+  name: "Restrictive Dev Policy",
+  namespace: "dev",
+  maxCpu: "100m",
+  maxMemory: "128Mi",
+  enabled: true
+});
+'
+echo "   Policies seeded successfully."
 
 echo "🔨 Building project..."
 ./mvnw clean install -DskipTests
@@ -25,11 +44,13 @@ echo "🏃 Starting Policy Service..."
 POL_PID=$!
 echo "   [PID: $POL_PID] Logs: tail -f policy.log"
 
-echo ""
-echo "✅ All services are starting in the background."
-echo "   To see Recommender logs: tail -f recommender.log"
-echo "   To see Policy logs:      tail -f policy.log"
-echo "   To stop everything:      kill $REC_PID $POL_PID && docker compose -f infra/docker-compose-lite.yml down"
-
 # Save PIDs to a file for easy stopping later
 echo "$REC_PID $POL_PID" > .services.pids
+
+echo ""
+echo "✅ Environment is UP and running!"
+echo "   - Infrastructure: Docker (Kafka, Mongo, MinIO)"
+echo "   - Services: Recommender & Policy (Background)"
+echo ""
+echo "👉 Use './check-mongo.sh' to watch recommendations in real-time."
+echo "👉 Use './stop-dev.sh' to stop everything."

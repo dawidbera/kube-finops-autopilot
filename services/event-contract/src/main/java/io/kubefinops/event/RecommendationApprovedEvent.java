@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Data
 @Builder
@@ -13,6 +14,8 @@ import java.time.Instant;
 @AllArgsConstructor
 public class RecommendationApprovedEvent {
     private String recommendationId;
+    private String workloadRef;
+    private Map<String, String> approvedResources;
     private String approvedBy;
     private Instant approvedAt;
 }
