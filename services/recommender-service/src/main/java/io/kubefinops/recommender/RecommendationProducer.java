@@ -17,21 +17,32 @@ import java.util.UUID;
 public class RecommendationProducer {
 
     private final KafkaTemplate<String, RecommendationCreatedEvent> kafkaTemplate;
+    private final io.kubefinops.recommender.client.PrometheusClient prometheusClient;
     private static final String TOPIC = "recommendation.created";
 
-    @Scheduled(fixedRate = 10000)
-    public void generateFakeRecommendation() {
-        RecommendationCreatedEvent event = RecommendationCreatedEvent.builder()
-                .id(UUID.randomUUID().toString())
-                .workloadRef("deployment/nginx")
-                .namespace("prod")
-                .currentResources(Map.of("cpu", "500m", "memory", "512Mi"))
-                .suggestedResources(Map.of("cpu", "200m", "memory", "256Mi"))
-                .confidenceScore(0.95)
-                .createdAt(Instant.now())
-                .build();
+    @Scheduled(fixedRate = 30000)
+    public void generateRecommendation() {
+        String namespace = "prod";
+        String deployment = "nginx";
 
-        log.info("Sending recommendation created event: {}", event.getId());
-        kafkaTemplate.send(TOPIC, event.getId(), event);
+        prometheusClient.getP95CpuUsage(namespace, deployment)
+                .subscribe(cpuUsage -> {
+                    double suggestedCpu = cpuUsage * 1.2;
+                    String suggestedCpuStr = String.format("%.0fm", suggestedCpu * 1000);
+
+                    RecommendationCreatedEvent event = RecommendationCreatedEvent.builder()
+                            .id(UUID.randomUUID().toString())
+                            .workloadRef("deployment/" + deployment)
+                            .namespace(namespace)
+                            .currentResources(Map.of("cpu", "500m", "memory", "512Mi"))
+                            .suggestedResources(Map.of("cpu", suggestedCpuStr, "memory", "256Mi"))
+                            .confidenceScore(0.90)
+                            .createdAt(Instant.now())
+                            .build();
+
+                    log.info("Sending recommendation for {} based on P95 usage ({}): {}", 
+                            deployment, cpuUsage, event.getId());
+                    kafkaTemplate.send(TOPIC, event.getId(), event);
+                });
     }
 }

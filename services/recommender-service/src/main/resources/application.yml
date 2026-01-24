@@ -10,6 +10,9 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
+prometheus:
+  url: http://localhost:9090
+
 management:
   endpoints:
     web:
