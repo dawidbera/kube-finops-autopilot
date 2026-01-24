@@ -45,10 +45,16 @@ jobs:
         with:
           name: service-jars
           path: .
+
+      - name: Display structure of downloaded files
+        run: ls -R
           
       - name: Build Docker Image (Dry Run)
         run: |
+          # The artifact likely contains 'services/service-name/target/file.jar'
+          # but let's make sure we are in the right place
           cd services/${{ matrix.service }}
-          # The JAR file is already in services/${{ matrix.service }}/target/ due to preserved path in artifact
+          # Check if target exists here
+          ls -d target || echo "Target directory NOT found in $(pwd)"
           docker build -t kubefinops/${{ matrix.service }}:latest .
           echo "Docker image for ${{ matrix.service }} built successfully (simulated push)"
