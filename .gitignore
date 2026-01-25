@@ -10,3 +10,4 @@ target/
 .DS_Store
 .services.pids
 !maven-wrapper.jar
+.env

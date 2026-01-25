@@ -33,7 +33,7 @@ spring:
 
 gitops:
   repo:
-    url: https://github.com/dawidbera/kube-finops-autopilot.git
+    url: https://github.com/dawidbera/smarthealth-gitops.git
     branch: master
     username: ${GITOPS_GIT_USER:}
     password: ${GITOPS_GIT_TOKEN:}
