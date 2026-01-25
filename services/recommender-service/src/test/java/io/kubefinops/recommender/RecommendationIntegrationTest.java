@@ -46,6 +46,7 @@ class RecommendationIntegrationTest {
         registry.add("spring.kafka.bootstrap-servers", kafkaContainer::getBootstrapServers);
         registry.add("prometheus.url", wireMock::baseUrl);
         registry.add("app.scheduler.rate", () -> 1000000);
+        registry.add("app.scheduler.delay", () -> 1000000);
     }
 
     @Autowired

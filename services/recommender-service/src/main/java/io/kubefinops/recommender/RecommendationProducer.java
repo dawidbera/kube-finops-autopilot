@@ -21,7 +21,7 @@ public class RecommendationProducer {
     private final CostCalculator costCalculator;
     private static final String TOPIC = "recommendation.created";
 
-    @Scheduled(fixedRateString = "${app.scheduler.rate:30000}")
+    @Scheduled(fixedRateString = "${app.scheduler.rate:30000}", initialDelayString = "${app.scheduler.delay:0}")
     public void generateRecommendation() {
         String namespace = "prod";
         String deployment = "nginx";
