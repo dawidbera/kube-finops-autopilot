@@ -45,6 +45,7 @@ class RecommendationIntegrationTest {
     static void setProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.kafka.bootstrap-servers", kafkaContainer::getBootstrapServers);
         registry.add("prometheus.url", wireMock::baseUrl);
+        registry.add("app.scheduler.rate", () -> 1000000);
     }
 
     @Autowired
