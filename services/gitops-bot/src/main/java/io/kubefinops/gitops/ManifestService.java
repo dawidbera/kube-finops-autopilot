@@ -14,21 +14,9 @@ import java.util.Map;
 @Service
 public class ManifestService {
 
-    @org.springframework.beans.factory.annotation.Value("${gitops.simulated-repo-path:deploy/gitops-repo-sim}")
-    private String simulatedRepoPath;
-
-    public void updateManifest(String workloadRef, String namespace, Map<String, String> resources, Double savings, String currency) {
+    public void updateManifest(String basePath, String workloadRef, String namespace, Map<String, String> resources, Double savings, String currency) {
         try {
-            Path baseRepoPath = Path.of(simulatedRepoPath);
-            if (!baseRepoPath.isAbsolute()) {
-                baseRepoPath = Path.of(System.getProperty("user.dir")).resolve(simulatedRepoPath);
-            }
-            
-            // Fix for running from sub-module directory
-            if (baseRepoPath.toString().contains("services/gitops-bot") && !simulatedRepoPath.startsWith("/")) {
-                 baseRepoPath = Path.of(System.getProperty("user.dir")).getParent().getParent().resolve(simulatedRepoPath);
-            }
-
+            Path baseRepoPath = Path.of(basePath);
             Path repoPath = baseRepoPath.resolve(namespace);
             Files.createDirectories(repoPath);
             

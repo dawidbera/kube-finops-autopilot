@@ -28,7 +28,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 class GitOpsBotIntegrationTest {
 
     @TempDir
-    static Path tempRepoDir;
+    static Path tempGitOrigin; // This will be our "remote"
+
+    @TempDir
+    static Path tempCloneDir; // This will be our local clone
 
     @Container
     static KafkaContainer kafkaContainer = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"));
@@ -36,7 +39,8 @@ class GitOpsBotIntegrationTest {
     @DynamicPropertySource
     static void setProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.kafka.bootstrap-servers", kafkaContainer::getBootstrapServers);
-        registry.add("gitops.simulated-repo-path", tempRepoDir::toString);
+        registry.add("gitops.repo.url", () -> "file://" + tempGitOrigin.toAbsolutePath().toString());
+        registry.add("gitops.repo.clone-path", () -> tempCloneDir.resolve("clone").toAbsolutePath().toString());
         registry.add("spring.kafka.producer.value-serializer", () -> "org.springframework.kafka.support.serializer.JsonSerializer");
     }
 
@@ -44,7 +48,15 @@ class GitOpsBotIntegrationTest {
     private KafkaTemplate<String, Object> kafkaTemplate;
 
     @Test
-    void shouldCreateFileWhenApprovedRecommendationReceived() {
+    void shouldCommitAndPushWhenApprovedRecommendationReceived() throws Exception {
+        // 0. Initialize "remote" repository
+        try (org.eclipse.jgit.api.Git git = org.eclipse.jgit.api.Git.init().setDirectory(tempGitOrigin.toFile()).call()) {
+            // Need at least one commit to be able to create branches from HEAD
+            java.nio.file.Files.writeString(tempGitOrigin.resolve("README.md"), "GitOps Repo");
+            git.add().addFilepattern(".").call();
+            git.commit().setMessage("Initial commit").call();
+        }
+
         // 1. Prepare Approval Event
         String recId = UUID.randomUUID().toString();
         RecommendationApprovedEvent event = RecommendationApprovedEvent.builder()
@@ -60,14 +72,22 @@ class GitOpsBotIntegrationTest {
         // 2. Send to Kafka
         kafkaTemplate.send("recommendation.approved", recId, event);
 
-        // 3. Verify that ManifestService created the file
-        Path expectedFile = tempRepoDir.resolve("test-ns").resolve("deployment-nginx-app.yaml");
-        
-        await().atMost(15, TimeUnit.SECONDS).untilAsserted(() -> {
-            assertThat(Files.exists(expectedFile)).isTrue();
-            String content = Files.readString(expectedFile);
-            assertThat(content).contains("cpu: 300m");
-            assertThat(content).contains("memory: 1Gi");
+        // 3. Verify that changes were pushed to "remote"
+        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
+            try (org.eclipse.jgit.api.Git git = org.eclipse.jgit.api.Git.open(tempGitOrigin.toFile())) {
+                String branchName = "fix/rightsize-" + recId.substring(0, 8);
+                // Check if branch exists in "remote"
+                boolean branchExists = git.branchList().setListMode(org.eclipse.jgit.api.ListBranchCommand.ListMode.ALL).call()
+                        .stream().anyMatch(ref -> ref.getName().contains(branchName));
+                assertThat(branchExists).isTrue();
+                
+                // Checkout that branch and check file
+                git.checkout().setName(branchName).call();
+                Path expectedFile = tempGitOrigin.resolve("test-ns").resolve("deployment-nginx-app.yaml");
+                assertThat(Files.exists(expectedFile)).isTrue();
+                String content = Files.readString(expectedFile);
+                assertThat(content).contains("cpu: 300m");
+            }
         });
     }
 }

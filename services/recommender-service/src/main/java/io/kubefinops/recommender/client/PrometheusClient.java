@@ -34,7 +34,20 @@ public class PrometheusClient {
                 .map(response -> {
                     try {
                         log.debug("Prometheus response: {}", response);
-                        return 0.150; 
+                        Map<String, Object> data = (Map<String, Object>) response.get("data");
+                        if (data == null) return 0.0;
+                        
+                        java.util.List<Object> result = (java.util.List<Object>) data.get("result");
+                        if (result == null || result.isEmpty()) return 0.0;
+                        
+                        Map<String, Object> firstResult = (Map<String, Object>) result.get(0);
+                        java.util.List<Object> value = (java.util.List<Object>) firstResult.get("value");
+                        
+                        if (value != null && value.size() >= 2) {
+                            String cpuValueStr = (String) value.get(1);
+                            return Double.parseDouble(cpuValueStr);
+                        }
+                        return 0.0;
                     } catch (Exception e) {
                         log.error("Error parsing Prometheus response", e);
                         return 0.1;

@@ -11,23 +11,34 @@ import org.springframework.stereotype.Service;
 public class RecommendationApprovedListener {
 
     private final ManifestService manifestService;
+    private final GitService gitService;
 
     @KafkaListener(topics = "recommendation.approved", groupId = "gitops-bot-group")
     public void handleApproval(RecommendationApprovedEvent event) {
         log.info("RECEIVED APPROVED RECOMMENDATION: {} for workload {}", 
                 event.getRecommendationId(), event.getWorkloadRef());
         
-        log.info(">>> GITOPS BOT ACTION START <<<");
-        log.info("1. Cloning GitOps repository...");
-        log.info("2. Creating new branch: fix/rightsize-{}", event.getRecommendationId().substring(0, 8));
+        String branchName = "fix/rightsize-" + event.getRecommendationId().substring(0, 8);
         
-        // Real logic simulation:
-        manifestService.updateManifest(event.getWorkloadRef(), event.getNamespace(), event.getApprovedResources(), 
-                event.getEstimatedMonthlySavings(), event.getCurrency());
-        
-        log.info("4. Committing changes...");
-        log.info("5. Pushing to origin...");
-        log.info("6. CREATING PULL REQUEST in GitOps repo for recommendation {}", event.getRecommendationId());
-        log.info(">>> GITOPS BOT ACTION COMPLETE <<<");
+        try (org.eclipse.jgit.api.Git git = gitService.cloneOrOpenRepo()) {
+            log.info(">>> GITOPS BOT ACTION START <<<");
+            
+            gitService.createBranch(git, branchName);
+            
+            String repoPath = git.getRepository().getWorkTree().getAbsolutePath();
+            manifestService.updateManifest(repoPath, event.getWorkloadRef(), event.getNamespace(), 
+                    event.getApprovedResources(), event.getEstimatedMonthlySavings(), event.getCurrency());
+            
+            String commitMessage = String.format("chore: rightsizing %s based on recommendation %s", 
+                    event.getWorkloadRef(), event.getRecommendationId());
+            
+            gitService.commitAndPush(git, commitMessage);
+            
+            log.info("6. CREATING PULL REQUEST (Simulated) in GitOps repo for recommendation {}", event.getRecommendationId());
+            log.info(">>> GITOPS BOT ACTION COMPLETE <<<");
+            
+        } catch (Exception e) {
+            log.error("Failed to process GitOps workflow for recommendation {}", event.getRecommendationId(), e);
+        }
     }
 }

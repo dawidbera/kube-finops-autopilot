@@ -19,15 +19,13 @@ class ManifestServiceTest {
     void shouldGenerateCorrectManifestYaml() throws IOException {
         // Given
         ManifestService manifestService = new ManifestService();
-        // Use reflection to set the private field for the test
-        org.springframework.test.util.ReflectionTestUtils.setField(manifestService, "simulatedRepoPath", tempDir.toString());
         
         String workloadRef = "deployment/test-app";
         String namespace = "dev-test";
         Map<String, String> resources = Map.of("cpu", "250m", "memory", "512Mi");
 
         // When
-        manifestService.updateManifest(workloadRef, namespace, resources, 15.0, "USD");
+        manifestService.updateManifest(tempDir.toString(), workloadRef, namespace, resources, 15.0, "USD");
 
         // Then
         Path expectedFile = tempDir.resolve(namespace).resolve("deployment-test-app.yaml");
