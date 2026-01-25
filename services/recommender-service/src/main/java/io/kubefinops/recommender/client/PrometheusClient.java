@@ -23,17 +23,25 @@ public class PrometheusClient {
     public Mono<Double> getP95CpuUsage(String namespace, String deployment) {
         String query = String.format("histogram_quantile(0.95, sum(rate(container_cpu_usage_seconds_total{namespace='%s', pod=~'%s-.*'}[5m])) by (le))", 
                 namespace, deployment);
-        
+        return queryPrometheus(query);
+    }
+
+    public Mono<Double> getP95MemoryUsage(String namespace, String deployment) {
+        String query = String.format("quantile(0.95, sum(container_memory_working_set_bytes{namespace='%s', pod=~'%s-.*'}) by (pod))", 
+                namespace, deployment);
+        return queryPrometheus(query);
+    }
+
+    private Mono<Double> queryPrometheus(String query) {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/api/v1/query")
-                        .queryParam("query", "{query}") // Use a placeholder
-                        .build(query)) // Pass the real query as a variable to avoid expansion of its own curly braces
+                        .queryParam("query", "{query}")
+                        .build(query))
                 .retrieve()
                 .bodyToMono(Map.class)
                 .map(response -> {
                     try {
-                        log.debug("Prometheus response: {}", response);
                         Map<String, Object> data = (Map<String, Object>) response.get("data");
                         if (data == null) return 0.0;
                         
@@ -44,16 +52,14 @@ public class PrometheusClient {
                         java.util.List<Object> value = (java.util.List<Object>) firstResult.get("value");
                         
                         if (value != null && value.size() >= 2) {
-                            String cpuValueStr = (String) value.get(1);
-                            return Double.parseDouble(cpuValueStr);
+                            String valStr = (String) value.get(1);
+                            return Double.parseDouble(valStr);
                         }
                         return 0.0;
                     } catch (Exception e) {
-                        log.error("Error parsing Prometheus response", e);
-                        return 0.1;
+                        return 0.0;
                     }
                 })
-                .doOnError(e -> log.error("Failed to connect to Prometheus at {}", prometheusUrl, e))
-                .onErrorReturn(0.120); 
+                .onErrorReturn(0.0);
     }
 }

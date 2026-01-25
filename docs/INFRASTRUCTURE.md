@@ -2,40 +2,58 @@
 
 This document describes the infrastructure components required to run the KubeFinOps Autopilot platform.
 
-## Core Components
+## 🏗️ Core Components
 
 ### 1. Messaging: Apache Kafka
-- **Role**: Event bus for the entire platform.
-- **Topics**: 
-  - `recommendation.created`
-  - `recommendation.approved`
-  - `policy.violated`
-  - `gitops.pr.created`
-- **Configuration**: Standard bitnami/kafka helm chart or single-node docker for lite profile.
+- **Role**: Event-driven backbone for service decoupling.
+- **Port**: `9092`
+- **Managed Topics**: 
+  - `recommendation.created`: Analysis result.
+  - `recommendation.approved`: Governance pass.
+  - `policy.violated`: Governance rejection.
+  - `gitops.pr.created`: PR link and branch info.
+  - `change.applied`: Successful Argo CD sync.
+  - `change.failed`: Sync failure notification.
 
-### 2. Database: MongoDB
-- **Role**: Stores policies, recommendation history, and audit logs.
-- **Data Model**: Document-based, allows flexible policy definitions.
+### 2. Metadata Database: MongoDB
+- **Role**: Persistent storage for policies, recommendation logs, and technical reports index.
+- **Port**: `27017`
+- **Key Collections**: `policies`, `recommendations`, `reports`.
 
-### 3. Object Storage: MinIO
-- **Role**: S3-compatible storage for cost reports and audit snapshots.
-- **Usage**: Exporting detailed analysis reports for historical review.
+### 3. Object Storage: MinIO (S3 Compatible)
+- **Role**: Audit storage for detailed technical reports.
+- **Ports**: `9000` (API), `9001` (Console)
+- **Usage**: JSON reports are pushed by `recommender-service` for long-term audit and compliance.
 
-### 4. Metrics: Prometheus
-- **Role**: Source of truth for workload resource usage (CPU/Memory).
-- **Queries**: p95/p99 usage metrics are pulled by the Recommender Service.
+### 4. Metrics & Source of Truth: Prometheus
+- **Role**: Collects performance data from target workloads.
+- **Port**: `9090`
+- **Queries**: Used by Recommender to fetch `p95` CPU/RAM usage over a 5-minute window.
 
-### 5. GitOps Controller: Argo CD
-- **Role**: Continuous Delivery. Synchronizes the GitOps repository with the target Kubernetes clusters.
-- **Interaction**: The GitOps Bot commits changes to Git, and Argo CD applies them.
+### 5. Visualization: Grafana
+- **Role**: FinOps Dashboards.
+- **Port**: `3000`
+- **Provisioning**: Dashboards and Prometheus datasource are automatically loaded via `infra/grafana/provisioning`.
 
-## Deployment Profiles
+## 🔄 Data Flow
 
-### Lite Profile (Local Dev)
-- **Target**: Local K3s / Kind.
-- **Resource Usage**: ~20GB RAM.
-- **Setup**: `infra/start-platform-lite.sh`.
+1.  **Prometheus** scrapes usage metrics.
+2.  **Recommender** queries Prometheus and calculates optimization proposals.
+3.  **Kafka** carries the proposal to **Policy Service**.
+4.  **MongoDB** provides the rules for validation.
+5.  **GitOps Bot** receives approved changes and commits to **Git**.
+6.  **Argo CD** (Planned) pulls Git changes and updates **Kubernetes**.
 
-### Full Profile (Production-like)
-- **Target**: Cloud EKS/GKE/AKS.
-- **Includes**: HA Kafka, HA MongoDB, multi-cluster support.
+## 💻 Local Development Setup
+
+The local infrastructure is orchestrated via Docker Compose:
+- **Location**: `kube-finops-autopilot/infra/docker-compose-lite.yml`
+- **Service Ports**:
+  - Kafka: `9092`
+  - MongoDB: `27017`
+  - MinIO: `9000/9001`
+  - Prometheus: `9090`
+  - Grafana: `3000`
+
+### Host Resolution (Linux)
+To allow Docker containers (Prometheus) to reach Spring Boot services running on the host, we use `extra_hosts` mapping `host.docker.internal` to `host-gateway`.

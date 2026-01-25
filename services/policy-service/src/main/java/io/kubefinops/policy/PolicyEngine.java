@@ -16,55 +16,76 @@ import java.util.Map;
 public class PolicyEngine {
 
     private final PolicyRepository policyRepository;
+    private final io.kubefinops.policy.repository.RecommendationRepository recommendationRepository;
 
-    public boolean validate(Recommendation recommendation) {
+    public ValidationResult validate(Recommendation recommendation) {
         List<Policy> activePolicies = policyRepository.findByNamespaceOrNamespaceIsNull(recommendation.getNamespace());
         
         if (activePolicies.isEmpty()) {
             log.info("No policies found for namespace {}. Auto-approving.", recommendation.getNamespace());
-            return true;
+            return ValidationResult.valid();
         }
 
         for (Policy policy : activePolicies) {
-            if (!checkPolicy(recommendation, policy)) {
-                return false;
+            ValidationResult result = checkPolicy(recommendation, policy);
+            if (!result.isValid()) {
+                return result;
             }
         }
 
-        return true;
+        return ValidationResult.valid();
     }
 
-    private boolean checkPolicy(Recommendation recommendation, Policy policy) {
+    private ValidationResult checkPolicy(Recommendation recommendation, Policy policy) {
         Map<String, String> suggested = recommendation.getSuggestedResources();
         
-        // Check CPU
+        // 1. Check individual Resource Limits
         if (policy.getMaxCpu() != null && suggested.containsKey("cpu")) {
             if (isExceeding(suggested.get("cpu"), policy.getMaxCpu())) {
-                log.warn("Policy {} violated: Suggested CPU {} exceeds limit {}", 
-                        policy.getName(), suggested.get("cpu"), policy.getMaxCpu());
-                return false;
+                String reason = String.format("Suggested CPU %s exceeds limit %s", suggested.get("cpu"), policy.getMaxCpu());
+                return ValidationResult.invalid(reason, policy.getName());
             }
         }
 
-        // Check Memory
-        if (policy.getMaxMemory() != null && suggested.containsKey("memory")) {
-            if (isExceeding(suggested.get("memory"), policy.getMaxMemory())) {
-                log.warn("Policy {} violated: Suggested Memory {} exceeds limit {}", 
-                        policy.getName(), suggested.get("memory"), policy.getMaxMemory());
-                return false;
-            }
-        }
-
-        // Check Savings Threshold
+        // 2. Check Savings Threshold
         if (policy.getMinMonthlySavings() != null && recommendation.getEstimatedMonthlySavings() != null) {
             if (recommendation.getEstimatedMonthlySavings() < policy.getMinMonthlySavings()) {
-                log.warn("Policy {} violated: Estimated savings ${} is below threshold ${}", 
-                        policy.getName(), recommendation.getEstimatedMonthlySavings(), policy.getMinMonthlySavings());
-                return false;
+                String reason = String.format("Estimated savings $%.2f is below threshold $%.2f", 
+                        recommendation.getEstimatedMonthlySavings(), policy.getMinMonthlySavings());
+                return ValidationResult.invalid(reason, policy.getName());
+            }
+        }
+
+        // 3. Check Namespace Budget (AGGREGATE)
+        if (policy.getMaxMonthlyCost() != null) {
+            double currentTotalCost = calculateCurrentNamespaceCost(recommendation.getNamespace());
+            double newRecommendationCost = estimateCost(recommendation.getSuggestedResources());
+            
+            if ((currentTotalCost + newRecommendationCost) > policy.getMaxMonthlyCost()) {
+                String reason = String.format("Namespace budget exceeded. Current: $%.2f, New: $%.2f, Max: $%.2f", 
+                        currentTotalCost, newRecommendationCost, policy.getMaxMonthlyCost());
+                log.warn("Policy {} violated: {}", policy.getName(), reason);
+                return ValidationResult.invalid(reason, policy.getName());
             }
         }
         
-        return true;
+        return ValidationResult.valid();
+    }
+
+    private double calculateCurrentNamespaceCost(String namespace) {
+        List<Recommendation> approved = recommendationRepository.findByNamespaceAndStatusIn(namespace, List.of("APPROVED"));
+        return approved.stream()
+                .mapToDouble(r -> estimateCost(r.getSuggestedResources()))
+                .sum();
+    }
+
+    private double estimateCost(Map<String, String> resources) {
+        if (resources == null) return 0.0;
+        double cpu = parseResource(resources.getOrDefault("cpu", "0m")) / 1000.0;
+        double mem = parseResource(resources.getOrDefault("memory", "0Mi")) / (1024.0 * 1024.0 * 1024.0);
+        
+        // Simple mock cost model: $30 per CPU core, $5 per GB RAM per month
+        return (cpu * 30.0) + (mem * 5.0);
     }
 
     private boolean isExceeding(String suggested, String limit) {

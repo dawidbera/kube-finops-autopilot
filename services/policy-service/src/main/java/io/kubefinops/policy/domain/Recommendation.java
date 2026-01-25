@@ -23,6 +23,7 @@ public class Recommendation {
     private String namespace;
     private Map<String, String> currentResources;
     private Map<String, String> suggestedResources;
+    private Integer replicas;
     private Double confidenceScore;
     private Double estimatedMonthlySavings;
     private String currency;
@@ -31,4 +32,5 @@ public class Recommendation {
     // Status field for future processing (e.g. PENDING, APPROVED, REJECTED)
     @Builder.Default
     private String status = "PENDING";
+    private String rejectionReason;
 }

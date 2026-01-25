@@ -19,6 +19,8 @@ public class RecommendationProducer {
     private final KafkaTemplate<String, RecommendationCreatedEvent> kafkaTemplate;
     private final io.kubefinops.recommender.client.PrometheusClient prometheusClient;
     private final CostCalculator costCalculator;
+    private final ReportService reportService;
+    private final io.micrometer.core.instrument.MeterRegistry meterRegistry;
     private static final String TOPIC = "recommendation.created";
 
     @Scheduled(fixedRateString = "${app.scheduler.rate:30000}", initialDelayString = "${app.scheduler.delay:0}")
@@ -26,31 +28,46 @@ public class RecommendationProducer {
         String namespace = "prod";
         String deployment = "nginx";
 
-        prometheusClient.getP95CpuUsage(namespace, deployment)
-                .subscribe(cpuUsage -> {
-                    double suggestedCpu = cpuUsage * 1.2;
-                    String suggestedCpuStr = String.format("%.0fm", suggestedCpu * 1000);
+        reactor.core.publisher.Mono.zip(
+                prometheusClient.getP95CpuUsage(namespace, deployment),
+                prometheusClient.getP95MemoryUsage(namespace, deployment)
+        ).subscribe(tuple -> {
+            Double cpuUsage = tuple.getT1();
+            Double memUsage = tuple.getT2();
 
-                    Map<String, String> currentResources = Map.of("cpu", "500m", "memory", "512Mi");
-                    Map<String, String> suggestedResources = Map.of("cpu", suggestedCpuStr, "memory", "256Mi");
+            // Rightsizing logic: 20% buffer
+            String suggestedCpu = String.format("%.0fm", Math.max(cpuUsage, 0.01) * 1200);
+            String suggestedMem = String.format("%.0fMi", (Math.max(memUsage, 1024 * 1024 * 64) / (1024 * 1024)) * 1.2);
 
-                    double monthlySavings = costCalculator.calculateMonthlySavings(currentResources, suggestedResources);
+            Map<String, String> currentResources = Map.of("cpu", "500m", "memory", "512Mi");
+            Map<String, String> suggestedResources = Map.of("cpu", suggestedCpu, "memory", suggestedMem);
 
-                    RecommendationCreatedEvent event = RecommendationCreatedEvent.builder()
-                            .id(UUID.randomUUID().toString())
-                            .workloadRef("deployment/" + deployment)
-                            .namespace(namespace)
-                            .currentResources(currentResources)
-                            .suggestedResources(suggestedResources)
-                            .confidenceScore(0.90)
-                            .estimatedMonthlySavings(monthlySavings)
-                            .currency("USD")
-                            .createdAt(Instant.now())
-                            .build();
+            double monthlySavings = costCalculator.calculateMonthlySavings(currentResources, suggestedResources);
+            String recId = UUID.randomUUID().toString();
 
-                    log.info("Sending recommendation for {} (Potential savings: ${}): {}", 
-                            deployment, String.format("%.2f", monthlySavings), event.getId());
-                    kafkaTemplate.send(TOPIC, event.getId(), event);
-                });
+            RecommendationCreatedEvent event = RecommendationCreatedEvent.builder()
+                    .id(recId)
+                    .workloadRef("deployment/" + deployment)
+                    .namespace(namespace)
+                    .currentResources(currentResources)
+                    .suggestedResources(suggestedResources)
+                    .confidenceScore(0.90)
+                    .estimatedMonthlySavings(monthlySavings)
+                    .currency("USD")
+                    .createdAt(Instant.now())
+                    .build();
+
+            log.info("Sending recommendation for {} (CPU: {}, MEM: {}, Savings: ${})", 
+                    deployment, suggestedCpu, suggestedMem, String.format("%.2f", monthlySavings));
+            
+            // Export metrics
+            meterRegistry.counter("recommendations_created_total", "namespace", namespace).increment();
+            meterRegistry.counter("recommendation_savings_total", "namespace", namespace).increment(monthlySavings);
+
+            kafkaTemplate.send(TOPIC, event.getId(), event);
+
+            // Generate report
+            reportService.generateAndStoreReport(recId, event.getWorkloadRef(), suggestedResources, monthlySavings);
+        });
     }
 }

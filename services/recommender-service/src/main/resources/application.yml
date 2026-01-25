@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: recommender-service
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/kubefinops
   kafka:
     bootstrap-servers: localhost:9092
     producer:
@@ -13,11 +16,19 @@ spring:
 prometheus:
   url: http://localhost:9090
 
+minio:
+  url: http://localhost:9000
+  access-key: admin
+  secret-key: password
+  bucket: kubefinops-reports
+
+app:
+  scheduler:
+    rate: 30000
+    delay: 5000
+
 management:
   endpoints:
     web:
       exposure:
         include: health,info,prometheus
-  metrics:
-    tags:
-      application: ${spring.application.name}

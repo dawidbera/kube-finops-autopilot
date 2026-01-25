@@ -17,6 +17,7 @@ public class RecommendationApprovedEvent {
     private String workloadRef;
     private String namespace;
     private Map<String, String> approvedResources;
+    private Integer replicas;
     private Double estimatedMonthlySavings;
     private String currency;
     private String approvedBy;

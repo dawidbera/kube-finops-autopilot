@@ -1,9 +1,11 @@
-package io.kubefinops.event;
+package io.kubefinops.recommender.domain;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.util.Map;
@@ -12,15 +14,14 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RecommendationCreatedEvent {
+@Document(collection = "reports")
+public class RecommendationReport {
+    @Id
     private String id;
+    private String recommendationId;
     private String workloadRef;
-    private String namespace;
-    private Map<String, String> currentResources;
     private Map<String, String> suggestedResources;
-    private Integer replicas;
-    private Double confidenceScore;
     private Double estimatedMonthlySavings;
-    private String currency;
-    private Instant createdAt;
+    private String s3Path;
+    private Instant generatedAt;
 }

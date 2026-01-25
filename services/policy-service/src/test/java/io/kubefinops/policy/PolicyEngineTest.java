@@ -37,7 +37,7 @@ class PolicyEngineTest {
                 .suggestedResources(Map.of("cpu", "500m", "memory", "512Mi"))
                 .build();
         
-        assertTrue(policyEngine.validate(rec));
+        assertTrue(policyEngine.validate(rec).isValid());
     }
 
     @Test
@@ -54,7 +54,7 @@ class PolicyEngineTest {
                 .suggestedResources(Map.of("cpu", "500m"))
                 .build();
         
-        assertFalse(policyEngine.validate(rec));
+        assertFalse(policyEngine.validate(rec).isValid());
     }
 
     @Test
@@ -70,7 +70,7 @@ class PolicyEngineTest {
                 .suggestedResources(Map.of("cpu", "500m"))
                 .build();
         
-        assertTrue(policyEngine.validate(rec));
+        assertTrue(policyEngine.validate(rec).isValid());
     }
 
     @Test
@@ -86,7 +86,7 @@ class PolicyEngineTest {
                 .suggestedResources(Map.of("memory", "2Gi"))
                 .build();
         
-        assertFalse(policyEngine.validate(rec));
+        assertFalse(policyEngine.validate(rec).isValid());
     }
 
     @Test
@@ -103,7 +103,7 @@ class PolicyEngineTest {
                 .estimatedMonthlySavings(5.0)
                 .build();
         
-        assertFalse(policyEngine.validate(rec));
+        assertFalse(policyEngine.validate(rec).isValid());
     }
 
     @Test
@@ -120,6 +120,6 @@ class PolicyEngineTest {
                 .estimatedMonthlySavings(15.0)
                 .build();
         
-        assertTrue(policyEngine.validate(rec));
+        assertTrue(policyEngine.validate(rec).isValid());
     }
 }
