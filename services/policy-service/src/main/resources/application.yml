@@ -7,18 +7,28 @@ spring:
   data:
     mongodb:
       uri: mongodb://localhost:27017/kubefinops
-  kafka:
-    bootstrap-servers: localhost:9092
-    consumer:
-      group-id: policy-group
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "io.kubefinops.*"
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  cloud:
+    function:
+      definition: validateRecommendation
+    stream:
+      kafka:
+        binder:
+          brokers: localhost:9092
+          configuration:
+            security.protocol: SASL_PLAINTEXT
+            sasl.mechanism: SCRAM-SHA-256
+            sasl.jaas.config: org.apache.kafka.common.security.scram.ScramLoginModule required username="user1" password="password";
+      bindings:
+        validateRecommendation-in-0:
+          destination: recommendation.created
+          group: policy-group
+          content-type: application/json
+        recommendationApproved-out-0:
+          destination: recommendation.approved
+          content-type: application/json
+        policyViolated-out-0:
+          destination: policy.violated
+          content-type: application/json
 
 management:
   endpoints:

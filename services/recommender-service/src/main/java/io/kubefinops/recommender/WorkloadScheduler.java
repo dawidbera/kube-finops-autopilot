@@ -3,7 +3,7 @@ package io.kubefinops.recommender;
 import io.kubefinops.event.RecommendationCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -16,8 +16,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class WorkloadScheduler {
 
-    private final KafkaTemplate<String, RecommendationCreatedEvent> kafkaTemplate;
-    private static final String TOPIC = "recommendation.created";
+    private final StreamBridge streamBridge;
+    private static final String BINDING_NAME = "recommendationCreated-out-0";
 
     /**
      * Sleep Cycle: Scale down to 0 replicas at 6 PM (Mon-Fri)
@@ -50,6 +50,6 @@ public class WorkloadScheduler {
                 .createdAt(Instant.now())
                 .build();
 
-        kafkaTemplate.send(TOPIC, event.getId(), event);
+        streamBridge.send(BINDING_NAME, event);
     }
 }

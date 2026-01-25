@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommender-service
+  labels:
+    {{- include "kubefinops.labels" . | nindent 4 }}
+    service: recommender
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: recommender
+  template:
+    metadata:
+      labels:
+        service: recommender
+    spec:
+      containers:
+      - name: recommender
+        image: {{ .Values.recommender.image }}
+        ports:
+        - containerPort: {{ .Values.recommender.port }}
+        env:
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: {{ .Values.global.kafkaBootstrap }}
+        - name: SPRING_DATA_MONGODB_URI
+          value: {{ .Values.global.mongoUri }}
+        - name: PROMETHEUS_URL
+          value: {{ .Values.recommender.prometheusUrl }}
+        - name: MINIO_URL
+          value: {{ .Values.recommender.minioUrl }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recommender-service
+spec:
+  selector:
+    service: recommender
+  ports:
+  - port: 8081
+    targetPort: 8081

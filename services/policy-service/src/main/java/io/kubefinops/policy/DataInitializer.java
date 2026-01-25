@@ -32,6 +32,7 @@ public class DataInitializer implements CommandLineRunner {
                     .namespace("prod")
                     .maxCpu("2000m")
                     .maxMemory("4Gi")
+                    .maxMonthlyCost(100.0) // Max $100 budget for all approved recommendations
                     .enabled(true)
                     .build();
             

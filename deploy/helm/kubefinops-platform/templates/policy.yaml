@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policy-service
+  labels:
+    {{- include "kubefinops.labels" . | nindent 4 }}
+    service: policy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: policy
+  template:
+    metadata:
+      labels:
+        service: policy
+    spec:
+      containers:
+      - name: policy
+        image: {{ .Values.policy.image }}
+        ports:
+        - containerPort: {{ .Values.policy.port }}
+        env:
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: {{ .Values.global.kafkaBootstrap }}
+        - name: SPRING_DATA_MONGODB_URI
+          value: {{ .Values.global.mongoUri }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: policy-service
+spec:
+  selector:
+    service: policy
+  ports:
+  - port: 8082
+    targetPort: 8082

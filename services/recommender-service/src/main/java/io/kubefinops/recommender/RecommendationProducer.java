@@ -3,7 +3,7 @@ package io.kubefinops.recommender;
 import io.kubefinops.event.RecommendationCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -16,12 +16,12 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class RecommendationProducer {
 
-    private final KafkaTemplate<String, RecommendationCreatedEvent> kafkaTemplate;
+    private final StreamBridge streamBridge;
     private final io.kubefinops.recommender.client.PrometheusClient prometheusClient;
     private final CostCalculator costCalculator;
     private final ReportService reportService;
     private final io.micrometer.core.instrument.MeterRegistry meterRegistry;
-    private static final String TOPIC = "recommendation.created";
+    private static final String BINDING_NAME = "recommendationCreated-out-0";
 
     @Scheduled(fixedRateString = "${app.scheduler.rate:30000}", initialDelayString = "${app.scheduler.delay:0}")
     public void generateRecommendation() {
@@ -64,7 +64,7 @@ public class RecommendationProducer {
             meterRegistry.counter("recommendations_created_total", "namespace", namespace).increment();
             meterRegistry.counter("recommendation_savings_total", "namespace", namespace).increment(monthlySavings);
 
-            kafkaTemplate.send(TOPIC, event.getId(), event);
+            streamBridge.send(BINDING_NAME, event);
 
             // Generate report
             reportService.generateAndStoreReport(recId, event.getWorkloadRef(), suggestedResources, monthlySavings);

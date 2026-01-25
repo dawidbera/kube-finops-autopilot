@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitops-bot
+  labels:
+    {{- include "kubefinops.labels" . | nindent 4 }}
+    service: bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: bot
+  template:
+    metadata:
+      labels:
+        service: bot
+    spec:
+      containers:
+      - name: bot
+        image: {{ .Values.bot.image }}
+        ports:
+        - containerPort: {{ .Values.bot.port }}
+        env:
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: {{ .Values.global.kafkaBootstrap }}
+        - name: GITOPS_REPO_URL
+          value: {{ .Values.bot.gitRepoUrl }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitops-bot
+spec:
+  selector:
+    service: bot
+  ports:
+  - port: 8083
+    targetPort: 8083

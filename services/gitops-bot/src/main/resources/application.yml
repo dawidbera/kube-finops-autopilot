@@ -4,18 +4,25 @@ server:
 spring:
   application:
     name: gitops-bot
-  kafka:
-    bootstrap-servers: localhost:9092
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-    consumer:
-      group-id: gitops-bot-group
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "io.kubefinops.*"
+  cloud:
+    function:
+      definition: handleApprovedRecommendation
+    stream:
+      kafka:
+        binder:
+          brokers: localhost:9092
+          configuration:
+            security.protocol: SASL_PLAINTEXT
+            sasl.mechanism: SCRAM-SHA-256
+            sasl.jaas.config: org.apache.kafka.common.security.scram.ScramLoginModule required username="user1" password="password";
+      bindings:
+        handleApprovedRecommendation-in-0:
+          destination: recommendation.approved
+          group: gitops-bot-group
+          content-type: application/json
+        prCreated-out-0:
+          destination: gitops.pr.created
+          content-type: application/json
 
 gitops:
   repo:

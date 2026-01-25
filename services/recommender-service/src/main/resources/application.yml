@@ -7,11 +7,19 @@ spring:
   data:
     mongodb:
       uri: mongodb://localhost:27017/kubefinops
-  kafka:
-    bootstrap-servers: localhost:9092
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: localhost:9092
+          configuration:
+            security.protocol: SASL_PLAINTEXT
+            sasl.mechanism: SCRAM-SHA-256
+            sasl.jaas.config: org.apache.kafka.common.security.scram.ScramLoginModule required username="user1" password="password";
+      bindings:
+        recommendationCreated-out-0:
+          destination: recommendation.created
+          content-type: application/json
 
 prometheus:
   url: http://localhost:9090

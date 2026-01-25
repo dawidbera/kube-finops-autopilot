@@ -47,6 +47,13 @@ public class PolicyEngine {
             }
         }
 
+        if (policy.getMaxMemory() != null && suggested.containsKey("memory")) {
+            if (isExceeding(suggested.get("memory"), policy.getMaxMemory())) {
+                String reason = String.format("Suggested Memory %s exceeds limit %s", suggested.get("memory"), policy.getMaxMemory());
+                return ValidationResult.invalid(reason, policy.getName());
+            }
+        }
+
         // 2. Check Savings Threshold
         if (policy.getMinMonthlySavings() != null && recommendation.getEstimatedMonthlySavings() != null) {
             if (recommendation.getEstimatedMonthlySavings() < policy.getMinMonthlySavings()) {
