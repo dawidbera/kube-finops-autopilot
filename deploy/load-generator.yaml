@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-generator
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: load-generator
+  template:
+    metadata:
+      labels:
+        app: load-generator
+    spec:
+      containers:
+      - name: loader
+        image: alpine:latest
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          apk add --no-cache curl;
+          while true; do
+            curl -s http://nginx.dev.svc.cluster.local > /dev/null;
+            echo "Request sent to nginx...";
+            sleep 0.5;
+          done
+        resources:
+          requests:
+            cpu: "10m"
+            memory: "32Mi"

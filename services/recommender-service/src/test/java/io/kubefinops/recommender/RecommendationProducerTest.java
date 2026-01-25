@@ -8,13 +8,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.cloud.stream.function.StreamBridge;
 import reactor.core.publisher.Mono;
 
-import java.util.concurrent.CompletableFuture;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -23,13 +20,22 @@ import static org.mockito.Mockito.*;
 class RecommendationProducerTest {
 
     @Mock
-    private KafkaTemplate<String, RecommendationCreatedEvent> kafkaTemplate;
+    private StreamBridge streamBridge;
 
     @Mock
     private PrometheusClient prometheusClient;
 
     @Mock
     private CostCalculator costCalculator;
+
+    @Mock
+    private ReportService reportService;
+
+    @Mock
+    private io.micrometer.core.instrument.MeterRegistry meterRegistry;
+
+    @Mock
+    private io.micrometer.core.instrument.Counter counter;
 
     @InjectMocks
     private RecommendationProducer recommendationProducer;
@@ -38,19 +44,21 @@ class RecommendationProducerTest {
     void shouldGenerateAndSendRecommendation() {
         // Given
         double mockCpuUsage = 0.100; // 100m
+        double mockMemUsage = 1024 * 1024 * 128.0; // 128Mi
         when(prometheusClient.getP95CpuUsage(anyString(), anyString())).thenReturn(Mono.just(mockCpuUsage));
+        when(prometheusClient.getP95MemoryUsage(anyString(), anyString())).thenReturn(Mono.just(mockMemUsage));
         when(costCalculator.calculateMonthlySavings(anyMap(), anyMap())).thenReturn(10.0);
+        when(meterRegistry.counter(anyString(), any(String[].class))).thenReturn(counter);
         
         // When
         recommendationProducer.generateRecommendation();
 
         // Then
         ArgumentCaptor<RecommendationCreatedEvent> eventCaptor = ArgumentCaptor.forClass(RecommendationCreatedEvent.class);
-        // Using verify with timeout because of reactive subscribe
-        verify(kafkaTemplate, timeout(2000)).send(eq("recommendation.created"), anyString(), eventCaptor.capture());
+        verify(streamBridge, timeout(2000)).send(eq("recommendationCreated-out-0"), eventCaptor.capture());
         
         RecommendationCreatedEvent event = eventCaptor.getValue();
-        assertEquals("prod", event.getNamespace());
+        assertEquals("dev", event.getNamespace());
         assertEquals("deployment/nginx", event.getWorkloadRef());
         assertEquals(10.0, event.getEstimatedMonthlySavings());
     }

@@ -20,19 +20,19 @@ public class WorkloadScheduler {
     private static final String BINDING_NAME = "recommendationCreated-out-0";
 
     /**
-     * Sleep Cycle: Scale down to 0 replicas at 6 PM (Mon-Fri)
+     * Sleep Cycle: Scale down to 0 replicas (Every even minute for testing)
      */
-    @Scheduled(cron = "0 0 18 * * MON-FRI")
+    @Scheduled(cron = "0 */2 * * * *")
     public void scheduleSleep() {
-        triggerScaling("dev", "nginx", 0, "Nightly Sleep Cycle");
+        triggerScaling("dev", "nginx", 0, "Nightly Sleep Cycle (TEST)");
     }
 
     /**
-     * Wake Cycle: Scale up to 1 replica at 8 AM (Mon-Fri)
+     * Wake Cycle: Scale up to 1 replica (Every odd minute for testing)
      */
-    @Scheduled(cron = "0 0 8 * * MON-FRI")
+    @Scheduled(cron = "0 1-59/2 * * * *")
     public void scheduleWake() {
-        triggerScaling("dev", "nginx", 1, "Morning Wake Cycle");
+        triggerScaling("dev", "nginx", 1, "Morning Wake Cycle (TEST)");
     }
 
     private void triggerScaling(String namespace, String deployment, Integer replicas, String reason) {

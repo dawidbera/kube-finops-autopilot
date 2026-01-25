@@ -22,7 +22,8 @@ class ManifestServiceTest {
         String workloadRef = "deployment/test-app";
         String namespace = "dev-test";
         
-        Path nsDir = tempDir.resolve(namespace);
+        Path gitopsDir = tempDir.resolve("smarthealth-gitops");
+        Path nsDir = gitopsDir.resolve(namespace);
         Files.createDirectories(nsDir);
         Path manifestFile = nsDir.resolve("test-app.yaml");
         Files.writeString(manifestFile, """

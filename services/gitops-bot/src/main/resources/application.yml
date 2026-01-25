@@ -6,11 +6,11 @@ spring:
     name: gitops-bot
   cloud:
     function:
-      definition: handleApprovedRecommendation
+      definition: handleApprovedRecommendation;monitorSync
     stream:
       kafka:
         binder:
-          brokers: localhost:9092
+          brokers: ${SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS:infra-kafka:9092}
           configuration:
             security.protocol: SASL_PLAINTEXT
             sasl.mechanism: SCRAM-SHA-256
@@ -20,14 +20,23 @@ spring:
           destination: recommendation.approved
           group: gitops-bot-group
           content-type: application/json
+        monitorSync-in-0:
+          destination: recommendation.approved
+          group: sync-monitor-group
+          content-type: application/json
         prCreated-out-0:
           destination: gitops.pr.created
+          content-type: application/json
+        changeApplied-out-0:
+          destination: change.applied
           content-type: application/json
 
 gitops:
   repo:
-    url: file:///tmp/gitops-repo-sim
+    url: https://github.com/dawidbera/kube-finops-autopilot.git
     branch: master
+    username: ${GITOPS_GIT_USER:}
+    password: ${GITOPS_GIT_TOKEN:}
     clone-path: /tmp/kubefinops-gitops-clone
 
 management:

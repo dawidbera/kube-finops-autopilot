@@ -8,9 +8,9 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "gitops.repo")
 public class GitProperties {
-    private String url = "https://github.com/dawidbera/smarthealth-gitops.git";
-    private String branch = "main";
-    private String username;
-    private String password; // PAT or actual password
-    private String clonePath = "/tmp/kubefinops-gitops-repo";
+    private String url;
+    private String branch = "master";
+    private String username; // Will be set from GITOPS_GIT_USER
+    private String password; // Will be set from GITOPS_GIT_TOKEN (PAT)
+    private String clonePath = "/tmp/kubefinops-gitops-clone";
 }

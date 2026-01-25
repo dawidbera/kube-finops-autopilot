@@ -61,6 +61,7 @@ public class GitService {
 
         log.info("Pushing to origin...");
         git.push()
+                .setRemote("origin")
                 .setCredentialsProvider(getCredentialsProvider())
                 .call();
     }
@@ -74,8 +75,11 @@ public class GitService {
 
     private UsernamePasswordCredentialsProvider getCredentialsProvider() {
         if (gitProperties.getUsername() != null && gitProperties.getPassword() != null) {
+            log.info("Using Git credentials for user: {}", gitProperties.getUsername());
             return new UsernamePasswordCredentialsProvider(gitProperties.getUsername(), gitProperties.getPassword());
         }
+        log.warn("GIT CREDENTIALS NOT FOUND! username: {}, password present: {}", 
+                gitProperties.getUsername(), gitProperties.getPassword() != null);
         return null;
     }
 }

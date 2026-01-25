@@ -18,11 +18,18 @@ spec:
       containers:
       - name: policy
         image: {{ .Values.policy.image }}
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: {{ .Values.policy.port }}
         env:
-        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+        - name: SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS
           value: {{ .Values.global.kafkaBootstrap }}
+        - name: SPRING_CLOUD_STREAM_KAFKA_BINDER_CONFIGURATION_SECURITY_PROTOCOL
+          value: "SASL_PLAINTEXT"
+        - name: SPRING_CLOUD_STREAM_KAFKA_BINDER_CONFIGURATION_SASL_MECHANISM
+          value: "SCRAM-SHA-256"
+        - name: SPRING_CLOUD_STREAM_KAFKA_BINDER_CONFIGURATION_SASL_JAAS_CONFIG
+          value: "org.apache.kafka.common.security.scram.ScramLoginModule required username='{{ .Values.global.kafkaUser }}' password='{{ .Values.global.kafkaPassword }}';"
         - name: SPRING_DATA_MONGODB_URI
           value: {{ .Values.global.mongoUri }}
 ---

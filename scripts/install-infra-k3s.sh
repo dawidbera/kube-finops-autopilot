@@ -56,6 +56,14 @@ helm upgrade --install infra-monitoring prometheus-community/kube-prometheus-sta
   --set grafana.enabled=true \
   --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false
 
+# 5. Install Argo CD
+echo "🐙 Installing Argo CD..."
+helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update
+helm upgrade --install infra-argocd argo/argo-cd -n $NAMESPACE \
+  --set server.service.type=ClusterIP \
+  --set server.extraArgs={--insecure}
+
 echo ""
 echo "✅ Infrastructure installation triggered!"
 echo "⏳ Wait for all pods to be READY in namespace: $NAMESPACE"

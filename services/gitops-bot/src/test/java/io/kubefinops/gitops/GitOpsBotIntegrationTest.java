@@ -38,14 +38,14 @@ class GitOpsBotIntegrationTest {
 
     @DynamicPropertySource
     static void setProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.kafka.bootstrap-servers", kafkaContainer::getBootstrapServers);
+        registry.add("spring.cloud.stream.kafka.binder.brokers", kafkaContainer::getBootstrapServers);
+        registry.add("spring.cloud.stream.kafka.binder.configuration.security.protocol", () -> "PLAINTEXT");
         registry.add("gitops.repo.url", () -> "file://" + tempGitOrigin.toAbsolutePath().toString());
         registry.add("gitops.repo.clone-path", () -> tempCloneDir.resolve("clone").toAbsolutePath().toString());
-        registry.add("spring.kafka.producer.value-serializer", () -> "org.springframework.kafka.support.serializer.JsonSerializer");
     }
 
     @Autowired
-    private KafkaTemplate<String, Object> kafkaTemplate;
+    private org.springframework.cloud.stream.function.StreamBridge streamBridge;
 
     @Test
     void shouldCommitAndPushWhenApprovedRecommendationReceived() throws Exception {
@@ -55,6 +55,25 @@ class GitOpsBotIntegrationTest {
             java.nio.file.Files.writeString(tempGitOrigin.resolve("README.md"), "GitOps Repo");
             git.add().addFilepattern(".").call();
             git.commit().setMessage("Initial commit").call();
+            
+            // Create the directory structure the bot expects
+            Path devDir = tempGitOrigin.resolve("smarthealth-gitops").resolve("test-ns");
+            Files.createDirectories(devDir);
+            Files.writeString(devDir.resolve("nginx-app.yaml"), """
+                    apiVersion: apps/v1
+                    kind: Deployment
+                    metadata:
+                      name: nginx-app
+                    spec:
+                      replicas: 1
+                      template:
+                        spec:
+                          containers:
+                          - name: nginx-app
+                            image: nginx
+                    """);
+            git.add().addFilepattern(".").call();
+            git.commit().setMessage("Add manifest").call();
         }
 
         // 1. Prepare Approval Event
@@ -69,8 +88,8 @@ class GitOpsBotIntegrationTest {
                 .approvedAt(Instant.now())
                 .build();
 
-        // 2. Send to Kafka
-        kafkaTemplate.send("recommendation.approved", recId, event);
+        // 2. Send to Kafka via StreamBridge
+        streamBridge.send("handleApprovedRecommendation-in-0", event);
 
         // 3. Verify that changes were pushed to "remote"
         await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
@@ -83,7 +102,7 @@ class GitOpsBotIntegrationTest {
                 
                 // Checkout that branch and check file
                 git.checkout().setName(branchName).call();
-                Path expectedFile = tempGitOrigin.resolve("test-ns").resolve("deployment-nginx-app.yaml");
+                Path expectedFile = tempGitOrigin.resolve("smarthealth-gitops").resolve("test-ns").resolve("nginx-app.yaml");
                 assertThat(Files.exists(expectedFile)).isTrue();
                 String content = Files.readString(expectedFile);
                 assertThat(content).contains("cpu: 300m");

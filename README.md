@@ -1,33 +1,29 @@
-# 🚀 KubeFinOps Autopilot
+# KubeFinOps Autopilot
 
-**GitOps-driven FinOps Platform for Kubernetes Resource Optimization.**
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/dawidbera/kube-finops-autopilot) 
+[![Platform Engineering](https://img.shields.io/badge/platform-engineering-blue)](https://github.com/dawidbera/kube-finops-autopilot) 
+[![FinOps](https://img.shields.io/badge/FinOps-driven-orange)](https://github.com/dawidbera/kube-finops-autopilot)
 
-KubeFinOps Autopilot is a professional platform engineering tool designed to automatically detect Kubernetes resource waste, validate changes against financial guardrails, and execute optimizations safely via Pull Requests and GitOps.
+**KubeFinOps Autopilot** is a GitOps-driven platform engineering tool designed to autonomously detect Kubernetes resource waste, calculate optimal rightsizing recommendations, and execute changes safely via Pull Requests and Argo CD.
 
----
-
-## 🎨 System Overview
-The platform operates as a **closed-loop control system** (Analyze -> Govern -> Execute -> Measure):
-
-1.  **Analyze**: `Recommender Service` monitors Prometheus metrics (CPU/RAM p95) and calculates optimal resource requests/limits.
-2.  **Govern**: `Policy Service` validates proposals against namespace budgets (e.g., max $500/mo) and organizational guardrails.
-3.  **Execute**: `GitOps Bot` intelligently edits YAML manifests in the configuration repository and opens Pull Requests.
-4.  **Measure**: `Observability Stack` tracks KPIs like `waste_ratio` and `realized_savings` via Grafana.
+The project implements a full **closed-loop control system**: Analyze -> Plan -> Verify -> Execute -> Measure.
 
 ---
 
-## ✨ Key Features
+## 🚀 Key Features
 
--   **Automated Rightsizing**: Dynamic calculation of `requests` & `limits` based on historical usage to eliminate "cloud waste".
--   **Budget Guardrails**: Prevents expensive deployments by enforcing namespace-level dollar limits before changes are merged.
--   **Non-Prod Scheduler**: Automated "Sleep/Wake" cycles for development environments (scales replicas to 0 outside business hours).
--   **Intelligent GitOps**: Non-destructive YAML editing that preserves comments, labels, and sidecar configurations.
--   **Event-Driven Audit**: Every decision is traced via Kafka events and archived as JSON reports in **MinIO S3**.
--   **FinOps Dashboards**: Real-time visualization of potential vs. realized savings.
+- **Automated Rightsizing**: Dynamic calculation of `requests` and `limits` based on P95/P99 historical usage from Prometheus.
+- **Budget Guardrails**: `Policy Service` validates all changes against namespace budgets and resource quotas before allowing execution.
+- **Non-Prod Scheduler**: Automated "Sleep/Wake" cycles for development environments to eliminate idle costs.
+- **GitOps-First Execution**: No direct cluster patches. Changes are committed to Git by the bot, ensuring a full audit trail.
+- **Feedback Loop**: `SyncMonitor` verifies that Argo CD successfully applied changes to the cluster and emits confirmation events.
+- **FinOps Observability**: Out-of-the-box Grafana dashboards for monitoring savings, waste ratio, and apply success rates.
 
 ---
 
-## 🏗️ Architecture
+## 🏗 Architecture
+
+The platform follows an event-driven microservices architecture using **Apache Kafka** as the backbone.
 
 ```mermaid
 flowchart TD
@@ -39,69 +35,68 @@ flowchart TD
   POL -->|approved/violated| KAFKA
   
   KAFKA -->|Consume Approved| BOT[GitOps Bot]
-  BOT -->|Create PR| GIT[(GitOps Repo)]
+  BOT -->|Create PR/Commit| GIT[(GitOps Repo)]
   
   ARGO[Argo CD] -->|Sync/Pull| GIT
-  ARGO -->|Apply Manifests| K8S((Kubernetes Cluster))
+  ARGO -->|Apply| K8S((K3s Cluster))
   
-  REC & POL & BOT -->|KPIs| PROM
-  REC -->|Archive| MINIO[(MinIO S3)]
+  K8S -->|Verify| BOT
+  BOT -->|change.applied| KAFKA
 ```
 
----
-
-## 🛠️ Tech Stack
-
--   **Backend**: Java 21, Spring Boot 3.4, Project Reactor (WebFlux)
--   **Messaging**: Apache Kafka
--   **Databases**: MongoDB (Metadata), MinIO (Object Storage)
--   **Observability**: Prometheus, Grafana, Micrometer
--   **GitOps**: JGit (Git Automation), Jackson YAML (Intelligent Parsing)
--   **Infrastructure**: Docker Compose (Lite) / K3s (Production)
+### Microservices:
+1.  **Recommender Service**: Analyzing usage patterns and generating rightsizing proposals.
+2.  **Policy Service**: Validating recommendations against governance rules (Budgets, Max Limits).
+3.  **GitOps Bot**: Handling Git operations (JGit) and monitoring cluster synchronization (Fabric8).
 
 ---
 
-## 🚀 Getting Started (Local Dev)
+## 🛠 Tech Stack
 
-### 1. Prerequisites
-- Docker & Docker Compose
-- Java 21 JDK
-- Maven 3.9+
+- **Core**: Java 21, Spring Boot 3.4, Spring Cloud Stream.
+- **Messaging**: Apache Kafka (SASL/SCRAM authentication).
+- **Storage**: MongoDB (Policy/Recommendation metadata), MinIO (Reports).
+- **Orchestration**: K3s (Kubernetes), Helm.
+- **GitOps**: Argo CD.
+- **Observability**: Prometheus, Grafana.
 
-### 2. Launch the Platform
-Run the automated bootstrap script to start infrastructure and microservices:
+---
+
+## 📦 Quick Start (Local Setup on K3s)
+
+### 1. Prerequisities
+- Linux OS with `k3s` installed.
+- `helm` and `docker` installed.
+- GitHub Personal Access Token (PAT) with `contents:write` permission.
+
+### 2. Install Infrastructure
 ```bash
-./kube-finops-autopilot/scripts/start-dev.sh
+./scripts/install-infra-k3s.sh
 ```
 
-### 3. Access the Tools
-- **Grafana Dashboards**: [http://localhost:3000](http://localhost:3000) (User: `admin` / `admin`)
-- **MinIO Console**: [http://localhost:9001](http://localhost:9001) (User: `admin` / `password`)
-- **Prometheus UI**: [http://localhost:9090](http://localhost:9090)
+### 3. Deploy Platform
+```bash
+helm upgrade --install kubefinops-platform ./deploy/helm/kubefinops-platform \
+  -n kubefinops \
+  --set bot.gitToken="YOUR_GITHUB_TOKEN"
+```
+
+### 4. Observe the Loop
+Monitor the `dev` namespace to see the load generator and the rightsizing in action:
+```bash
+kubectl get pods -n dev -w
+```
 
 ---
 
-## 📈 Showing it to the World (Demo Scenario)
+## 📊 Monitoring & Audit
 
-To demonstrate the **Budget Guardrail** feature:
-
-1.  **Observe normal flow**: Recommender generates a change -> Policy approves -> PR is created.
-2.  **Tighten the budget**:
-    ```bash
-    docker exec infra-mongodb-1 mongosh kubefinops --eval 'db.policies.updateOne({name: "Global Budget Limit"}, {$set: {maxMonthlyCost: 5.0}})'
-    ```
-3.  **Watch the rejection**: Check `policy.log`. The system will now block recommendations that exceed the $5 limit, sending a `policy.violated` event instead of approving the PR.
-4.  **Verify Audit**: Log in to MinIO to see the technical JSON reports generated for every recommendation.
+- **Grafana Dashboard**: Access `http://localhost:3000` (User: `admin`). Find the "FinOps Overview" dashboard.
+- **Kafka Events**: Use `kafka-console-consumer` to observe the `recommendation.*` and `change.applied` topics.
+- **Audit Logs**: Every decision is stored in MongoDB and reflected in the Git history of the targeted repository.
 
 ---
 
-## 🗺️ Roadmap
-- [x] Event-Driven Backbone (Kafka)
-- [x] Intelligent YAML Editing
-- [x] S3 Report Archiving
-- [x] Namespace-level Budgeting
-- [ ] Full K3s + Argo CD Integration
-- [ ] Machine Learning for better p99 predictions
-
----
-*Developed as a Portfolio Showcase for Cloud Native Platform Engineering.*
+## 📜 Maintenance
+- **Documentation**: Managed via `GEMINI.md` and standard project docs.
+- **Control Loop**: Verification is performed by the `SyncMonitor` component within the GitOps Bot.

@@ -21,18 +21,25 @@ public class ManifestService {
 
     public ManifestService() {
         YAMLFactory factory = new YAMLFactory()
-                .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER);
+                .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
+                .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES)
+                .enable(YAMLGenerator.Feature.INDENT_ARRAYS);
         this.yamlMapper = new ObjectMapper(factory);
     }
 
     public void updateManifest(String basePath, String workloadRef, String namespace, Map<String, String> resources, Integer replicas, Double savings, String currency) {
         try {
             String deploymentName = workloadRef.split("/")[1];
-            Path manifestPath = Path.of(basePath, namespace, deploymentName + ".yaml");
+            Path manifestPath = Path.of(basePath, "smarthealth-gitops", namespace, deploymentName + ".yaml");
             File file = manifestPath.toFile();
 
             if (!file.exists()) {
-                manifestPath = Path.of(basePath, namespace, "deployment-" + deploymentName + ".yaml");
+                manifestPath = Path.of(basePath, "smarthealth-gitops", namespace, "deployment-" + deploymentName + ".yaml");
+                file = manifestPath.toFile();
+            }
+
+            if (!file.exists()) {
+                manifestPath = Path.of(basePath, "smarthealth-gitops", namespace, deploymentName + "-deployment.yaml");
                 file = manifestPath.toFile();
             }
 

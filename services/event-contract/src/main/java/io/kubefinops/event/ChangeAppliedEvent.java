@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Data
 @Builder
@@ -13,7 +14,9 @@ import java.time.Instant;
 @AllArgsConstructor
 public class ChangeAppliedEvent {
     private String recommendationId;
-    private String prUrl;
-    private String argoSyncId;
+    private String workloadRef;
+    private String namespace;
+    private Map<String, String> appliedResources;
+    private Integer replicas;
     private Instant appliedAt;
 }

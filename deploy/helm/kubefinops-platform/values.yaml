@@ -1,12 +1,14 @@
 global:
   namespace: kubefinops
   kafkaBootstrap: "infra-kafka:9092"
+  kafkaUser: "user1"
+  kafkaPassword: "468BhRv5hu"
   mongoUri: "mongodb://infra-mongodb:27017/kubefinops"
 
 recommender:
   image: kubefinops/recommender-service:latest
   port: 8081
-  prometheusUrl: "http://infra-monitoring-prometheus:9090"
+  prometheusUrl: "http://infra-monitoring-kube-prom-prometheus:9090"
   minioUrl: "http://infra-minio:9000"
 
 policy:
@@ -16,4 +18,6 @@ policy:
 bot:
   image: kubefinops/gitops-bot:latest
   port: 8083
-  gitRepoUrl: "http://gitea-http:3000/gitops/config.git"
+  gitRepoUrl: "https://github.com/dawidbera/kube-finops-autopilot.git"
+  gitUser: "dawidbera"
+  gitToken: "YOUR_GITHUB_TOKEN" # Should be passed via --set at runtime

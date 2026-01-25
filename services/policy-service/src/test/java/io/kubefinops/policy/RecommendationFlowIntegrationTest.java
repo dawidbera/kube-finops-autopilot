@@ -48,11 +48,12 @@ class RecommendationFlowIntegrationTest {
     @DynamicPropertySource
     static void setProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.data.mongodb.uri", mongoDBContainer::getReplicaSetUrl);
-        registry.add("spring.kafka.bootstrap-servers", kafkaContainer::getBootstrapServers);
+        registry.add("spring.cloud.stream.kafka.binder.brokers", kafkaContainer::getBootstrapServers);
+        registry.add("spring.cloud.stream.kafka.binder.configuration.security.protocol", () -> "PLAINTEXT");
     }
 
     @Autowired
-    private KafkaTemplate<String, Object> kafkaTemplate;
+    private org.springframework.cloud.stream.function.StreamBridge streamBridge;
 
     @Autowired
     private RecommendationRepository recommendationRepository;
@@ -75,8 +76,8 @@ class RecommendationFlowIntegrationTest {
         BlockingQueue<RecommendationApprovedEvent> approvals = new LinkedBlockingQueue<>();
         setupApprovalConsumer(approvals);
 
-        // 3. Send event to Kafka
-        kafkaTemplate.send("recommendation.created", recId, event);
+        // 3. Send event to Kafka via StreamBridge
+        streamBridge.send("validateRecommendation-in-0", event);
 
         // 4. Verify MongoDB record (use awaitility for async processing)
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {

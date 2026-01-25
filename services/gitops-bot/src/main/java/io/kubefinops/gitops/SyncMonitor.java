@@ -1,70 +1,106 @@
 package io.kubefinops.gitops;
 
+import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.kubefinops.event.ChangeAppliedEvent;
-import io.kubefinops.event.ChangeFailedEvent;
-import io.kubefinops.event.GitOpsPRCreatedEvent;
-import lombok.RequiredArgsConstructor;
+import io.kubefinops.event.RecommendationApprovedEvent;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.cloud.stream.function.StreamBridge;
+import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.Random;
-import java.util.UUID;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class SyncMonitor {
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
-    private final io.micrometer.core.instrument.MeterRegistry meterRegistry;
-    private final Random random = new Random();
+    private KubernetesClient kubernetesClient;
+    private final StreamBridge streamBridge;
+    private final Map<String, RecommendationApprovedEvent> pendingVerifications = new ConcurrentHashMap<>();
 
-    private static final String APPLIED_TOPIC = "change.applied";
-    private static final String FAILED_TOPIC = "change.failed";
+    public SyncMonitor(StreamBridge streamBridge) {
+        this.streamBridge = streamBridge;
+        try {
+            this.kubernetesClient = new KubernetesClientBuilder().build();
+        } catch (Exception e) {
+            log.warn("Kubernetes client could not be initialized. Sync monitoring will be disabled. Error: {}", e.getMessage());
+        }
+    }
 
-    @KafkaListener(topics = "gitops.pr.created", groupId = "sync-monitor-group")
-    public void handlePRCreated(GitOpsPRCreatedEvent event) {
-        log.info("Monitoring Sync status for PR: {} (Recommendation: {})", 
-                event.getPrUrl(), event.getRecommendationId());
+    @Bean
+    public Consumer<RecommendationApprovedEvent> monitorSync() {
+        return event -> {
+            if (kubernetesClient == null) {
+                log.warn("Skipping sync monitoring for {} - Kubernetes client not available", event.getRecommendationId());
+                return;
+            }
+            log.info("Started monitoring sync for recommendation: {}", event.getRecommendationId());
+            pendingVerifications.put(event.getRecommendationId(), event);
+        };
+    }
 
-        new Thread(() -> {
+    @Scheduled(fixedDelay = 10000) // Every 10 seconds
+    public void verifyAppliedChanges() {
+        if (kubernetesClient == null || pendingVerifications.isEmpty()) return;
+
+        log.debug("Verifying {} pending changes in cluster...", pendingVerifications.size());
+        
+        pendingVerifications.values().forEach(event -> {
             try {
-                Thread.sleep(5000);
+                String[] ref = event.getWorkloadRef().split("/");
+                String name = ref[1];
                 
-                // Simulate 10% failure rate
-                if (random.nextDouble() > 0.1) {
+                Deployment deployment = kubernetesClient.apps().deployments()
+                        .inNamespace(event.getNamespace())
+                        .withName(name)
+                        .get();
+
+                if (deployment != null && isSynchronized(deployment, event)) {
+                    log.info("✅ SUCCESS: Change for {} applied successfully in k3s!", event.getWorkloadRef());
+                    
                     ChangeAppliedEvent appliedEvent = ChangeAppliedEvent.builder()
                             .recommendationId(event.getRecommendationId())
-                            .prUrl(event.getPrUrl())
-                            .argoSyncId(UUID.randomUUID().toString())
+                            .workloadRef(event.getWorkloadRef())
+                            .namespace(event.getNamespace())
+                            .appliedResources(event.getApprovedResources())
+                            .replicas(event.getReplicas())
                             .appliedAt(Instant.now())
                             .build();
 
-                    log.info(">>> ARGO CD SYNC COMPLETE: Recommendation {} applied to cluster", 
-                            event.getRecommendationId());
-                    
-                    meterRegistry.counter("change_applied_total", "status", "success").increment();
-                    kafkaTemplate.send(APPLIED_TOPIC, event.getRecommendationId(), appliedEvent);
-                } else {
-                    ChangeFailedEvent failedEvent = ChangeFailedEvent.builder()
-                            .recommendationId(event.getRecommendationId())
-                            .prUrl(event.getPrUrl())
-                            .errorMessage("Argo CD timeout: health checks failed for workload")
-                            .failedAt(Instant.now())
-                            .build();
-
-                    log.error(">>> ARGO CD SYNC FAILED: Recommendation {} could not be applied", 
-                            event.getRecommendationId());
-                    
-                    meterRegistry.counter("change_applied_total", "status", "failed").increment();
-                    kafkaTemplate.send(FAILED_TOPIC, event.getRecommendationId(), failedEvent);
+                    streamBridge.send("changeApplied-out-0", appliedEvent);
+                    pendingVerifications.remove(event.getRecommendationId());
                 }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            } catch (Exception e) {
+                log.error("Error during cluster sync verification for {}", event.getRecommendationId(), e);
             }
-        }).start();
+        });
+    }
+
+    private boolean isSynchronized(Deployment deployment, RecommendationApprovedEvent event) {
+        // 1. Check replicas
+        if (event.getReplicas() != null) {
+            Integer actualReplicas = deployment.getSpec().getReplicas();
+            if (!event.getReplicas().equals(actualReplicas)) return false;
+        }
+
+        // 2. Check resources (simplified check)
+        if (event.getApprovedResources() != null && !event.getApprovedResources().isEmpty()) {
+            var container = deployment.getSpec().getTemplate().getSpec().getContainers().get(0);
+            var requests = container.getResources().getRequests();
+            
+            if (event.getApprovedResources().containsKey("cpu")) {
+                String approvedCpu = event.getApprovedResources().get("cpu");
+                String actualCpu = requests.get("cpu").getAmount();
+                if (!approvedCpu.equals(actualCpu)) return false;
+            }
+        }
+
+        return true;
     }
 }

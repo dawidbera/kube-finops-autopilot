@@ -36,6 +36,9 @@ class RecommendationIntegrationTest {
     @Container
     static KafkaContainer kafkaContainer = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"));
 
+    @Container
+    static org.testcontainers.containers.MongoDBContainer mongoContainer = new org.testcontainers.containers.MongoDBContainer(DockerImageName.parse("mongo:7.0.0"));
+
     @org.junit.jupiter.api.extension.RegisterExtension
     static com.github.tomakehurst.wiremock.junit5.WireMockExtension wireMock = com.github.tomakehurst.wiremock.junit5.WireMockExtension.newInstance()
             .options(com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig().dynamicPort())
@@ -43,7 +46,9 @@ class RecommendationIntegrationTest {
 
     @DynamicPropertySource
     static void setProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.kafka.bootstrap-servers", kafkaContainer::getBootstrapServers);
+        registry.add("spring.cloud.stream.kafka.binder.brokers", kafkaContainer::getBootstrapServers);
+        registry.add("spring.data.mongodb.uri", mongoContainer::getReplicaSetUrl);
+        registry.add("spring.cloud.stream.kafka.binder.configuration.security.protocol", () -> "PLAINTEXT");
         registry.add("prometheus.url", wireMock::baseUrl);
         registry.add("app.scheduler.rate", () -> 1000000);
         registry.add("app.scheduler.delay", () -> 1000000);
@@ -70,6 +75,7 @@ class RecommendationIntegrationTest {
         // 4. Verify Kafka Event
         RecommendationCreatedEvent event = events.poll(30, TimeUnit.SECONDS);
         assertThat(event).isNotNull();
+        assertThat(event.getNamespace()).isEqualTo("dev");
         assertThat(event.getWorkloadRef()).isEqualTo("deployment/nginx");
         // 0.150 * 1.2 = 0.180 -> "180m"
         assertThat(event.getSuggestedResources().get("cpu")).isEqualTo("180m");

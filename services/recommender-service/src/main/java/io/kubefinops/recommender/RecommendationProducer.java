@@ -25,7 +25,7 @@ public class RecommendationProducer {
 
     @Scheduled(fixedRateString = "${app.scheduler.rate:30000}", initialDelayString = "${app.scheduler.delay:0}")
     public void generateRecommendation() {
-        String namespace = "prod";
+        String namespace = "dev";
         String deployment = "nginx";
 
         reactor.core.publisher.Mono.zip(

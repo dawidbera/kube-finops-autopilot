@@ -11,7 +11,7 @@ spring:
     stream:
       kafka:
         binder:
-          brokers: localhost:9092
+          brokers: ${SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS:infra-kafka:9092}
           configuration:
             security.protocol: SASL_PLAINTEXT
             sasl.mechanism: SCRAM-SHA-256
