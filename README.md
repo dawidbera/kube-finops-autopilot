@@ -72,34 +72,29 @@ This project follows the **3-Repo Pattern**:
 
 ---
 
-## 📦 Quick Start (Local Setup on K3s)
+## 💻 Local Development (Docker-first)
 
-### 1. Prerequisities
-- Linux OS with `k3s` installed.
-- `helm` and `docker` installed.
-- GitHub Personal Access Token (PAT) with `contents:write` permission.
+For rapid development and testing of the entire platform without a full Kubernetes cluster:
 
-### 2. Install Infrastructure
+### 1. Start everything
 ```bash
-./scripts/install-infra-k3s.sh
+./scripts/start-dev-docker.sh
 ```
+This script builds the microservices and starts all components (Kafka, MongoDB, MinIO, Monitoring, and Apps) in Docker containers.
 
-### 3. Deploy Platform
-```bash
-helm upgrade --install kubefinops-platform ./deploy/helm/kubefinops-platform \
-  -n kubefinops \
-  --set bot.gitToken="YOUR_GITHUB_TOKEN"
-```
+### 2. Monitor & Audit
+- **Grafana**: `http://localhost:3000` (User: `admin`, Pass: `admin`). Check the **FinOps Overview** dashboard.
+- **Logs**: `docker compose -f infra/docker-compose-full.yml logs -f`
+- **Recommendations**: `./scripts/check-mongo.sh`
 
-### 4. Observe the Loop
-Monitor the `dev` namespace to see the load generator and the rightsizing in action:
+### 3. Stop
 ```bash
-kubectl get pods -n dev -w
+docker compose -f infra/docker-compose-full.yml down
 ```
 
 ---
 
-## 📊 Monitoring & Audit
+## 📦 Kubernetes Setup (K3s)
 
 - **Grafana Dashboard**: Access `http://localhost:3000` (User: `admin`). Find the "FinOps Overview" dashboard.
 - **Kafka Events**: Use `kafka-console-consumer` to observe the `recommendation.*` and `change.applied` topics.

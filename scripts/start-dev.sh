@@ -14,6 +14,8 @@ if [ -f "$PROJECT_ROOT/.env" ]; then
   export $(grep -v '^#' "$PROJECT_ROOT/.env" | xargs)
 fi
 
+export SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS=localhost:9092
+
 echo "🚀 Starting infrastructure (Kafka, MongoDB, MinIO)..."
 docker compose -f "$PROJECT_ROOT/infra/docker-compose-lite.yml" up -d
 

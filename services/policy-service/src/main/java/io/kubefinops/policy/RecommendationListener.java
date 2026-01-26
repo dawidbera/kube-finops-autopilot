@@ -54,7 +54,15 @@ public class RecommendationListener {
                 recommendation.setStatus("APPROVED");
                 log.info("Recommendation {} APPROVED", event.getId());
                 
+                // Metrics
                 meterRegistry.counter("recommendations_total", "status", "approved", "namespace", event.getNamespace()).increment();
+                if (event.getEstimatedMonthlySavings() != null) {
+                    io.micrometer.core.instrument.Counter.builder("recommendation_savings_total")
+                            .tag("namespace", event.getNamespace())
+                            .tag("currency", event.getCurrency())
+                            .register(meterRegistry)
+                            .increment(event.getEstimatedMonthlySavings());
+                }
 
                 // 2. Send approval event
                 RecommendationApprovedEvent approvedEvent = RecommendationApprovedEvent.builder()

@@ -2,9 +2,18 @@
 
 This document provides a detailed technical overview of the infrastructure supporting the KubeFinOps platform, now fully orchestrated within a **K3s Kubernetes cluster**.
 
-## 🏗️ Core Infrastructure (Namespace: `kubefinops`)
+## 🏗️ Core Infrastructure
 
-The entire platform is deployed using **Helm**, ensuring consistent and reproducible environments.
+The platform can be deployed in two modes: **Full Dockerized Stack** (for development) or **K3s Kubernetes Cluster** (for production-like testing).
+
+### 🛠️ Docker Development Mode (`infra/docker-compose-full.yml`)
+In this mode, all services and infrastructure run as Docker containers in a shared network.
+- **Microservices**: Built from source and containerized automatically.
+- **Kafka Security**: Configured as `PLAINTEXT` for rapid local development.
+- **Data Persistence**: Uses Docker volumes for MongoDB and Kafka.
+
+### ☸️ Kubernetes Mode (Namespace: `kubefinops`)
+Deployable via Helm using `./scripts/install-infra-k3s.sh`.
 
 ### 1. Event Bus: Apache Kafka (Bitnami)
 - **Service Name**: `infra-kafka`
@@ -57,6 +66,8 @@ The platform follows a **3-Repo Pattern**:
 ---
 
 ## 🛠️ Management Commands
+
+> **Note**: All platform management scripts (located in `../scripts/`) are location-agnostic and can be executed from any directory.
 
 ### Monitoring Cluster Health
 ```bash

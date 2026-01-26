@@ -29,25 +29,34 @@ public class ManifestService {
 
     public void updateManifest(String basePath, String workloadRef, String namespace, Map<String, String> resources, Integer replicas, Double savings, String currency) {
         try {
-            String deploymentName = workloadRef.split("/")[1];
-            Path manifestPath = Path.of(basePath, "smarthealth-gitops", namespace, deploymentName + ".yaml");
-            File file = manifestPath.toFile();
+            String deploymentName = workloadRef.contains("/") ? workloadRef.split("/")[1] : workloadRef;
+            
+            // Standard naming patterns in GitOps repo
+            String[] possibleFileNames = {
+                deploymentName + ".yaml",
+                deploymentName + ".yml",
+                "deployment-" + deploymentName + ".yaml",
+                deploymentName + "-deployment.yaml",
+                deploymentName + "-deployment.yml"
+            };
 
-            if (!file.exists()) {
-                manifestPath = Path.of(basePath, "smarthealth-gitops", namespace, "deployment-" + deploymentName + ".yaml");
-                file = manifestPath.toFile();
+            File file = null;
+            for (String fileName : possibleFileNames) {
+                Path path = Path.of(basePath, namespace, fileName);
+                log.debug("Checking manifest path: {}", path);
+                if (path.toFile().exists()) {
+                    file = path.toFile();
+                    break;
+                }
             }
 
-            if (!file.exists()) {
-                manifestPath = Path.of(basePath, "smarthealth-gitops", namespace, deploymentName + "-deployment.yaml");
-                file = manifestPath.toFile();
-            }
-
-            if (!file.exists()) {
-                log.error("Manifest file not found at expected locations for {}", workloadRef);
+            if (file == null) {
+                log.error("Manifest file not found for {} in namespace {}. Checked patterns in {}", 
+                        workloadRef, namespace, basePath);
                 return;
             }
 
+            log.info("Found manifest file: {}", file.getAbsolutePath());
             JsonNode root = yamlMapper.readTree(file);
             
             // Update Replicas if provided

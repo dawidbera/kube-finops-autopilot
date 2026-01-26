@@ -5,14 +5,14 @@
 
 set -e
 
-# Change to the script directory
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 echo "🧪 Starting KubeFinOps Autopilot Test Suite..."
 echo "--------------------------------------------"
 
 # Run Maven tests
-cd ..
+cd "$PROJECT_ROOT"
 ./mvnw test
 
 echo ""
