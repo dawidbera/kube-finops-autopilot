@@ -46,7 +46,7 @@ class ManifestServiceTest {
         Map<String, String> resources = Map.of("cpu", "250m", "memory", "512Mi");
 
         // When
-        manifestService.updateManifest(tempDir.toString(), workloadRef, namespace, resources, 0, 15.0, "USD");
+        manifestService.updateManifest(gitopsDir.toString(), workloadRef, namespace, resources, 0, 15.0, "USD");
 
         // Then
         String content = Files.readString(manifestFile);
