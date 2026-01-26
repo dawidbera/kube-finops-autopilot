@@ -62,6 +62,16 @@ flowchart TD
 
 ---
 
+## 📂 Repositories
+
+This project follows the **3-Repo Pattern**:
+
+1.  **[kube-finops-autopilot](https://github.com/dawidbera/kube-finops-autopilot)** (This Repo): Platform source code, Helm charts, and core infrastructure.
+2.  **[smarthealth-gitops](https://github.com/dawidbera/smarthealth-gitops)**: **Source of Truth** for the cluster state. Contains Kubernetes manifests managed by Argo CD.
+3.  **Application Repo**: (Mocked) Source code of the target applications.
+
+---
+
 ## 📦 Quick Start (Local Setup on K3s)
 
 ### 1. Prerequisities
