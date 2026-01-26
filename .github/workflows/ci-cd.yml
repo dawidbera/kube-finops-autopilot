@@ -10,7 +10,7 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     env:
-      MAVEN_OPTS: "-Xmx2048m -XX:MaxMetaspaceSize=512m"
+      MAVEN_OPTS: "-Xmx1024m -XX:MaxMetaspaceSize=256m"
     steps:
       - uses: actions/checkout@v4
       
