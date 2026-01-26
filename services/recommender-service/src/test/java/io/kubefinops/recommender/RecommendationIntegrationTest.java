@@ -50,6 +50,7 @@ class RecommendationIntegrationTest {
         registry.add("spring.data.mongodb.uri", mongoContainer::getReplicaSetUrl);
         registry.add("spring.cloud.stream.kafka.binder.configuration.security.protocol", () -> "PLAINTEXT");
         registry.add("prometheus.url", wireMock::baseUrl);
+        registry.add("minio.url", wireMock::baseUrl); // Redirect MinIO to WireMock to avoid ConnectException
         registry.add("app.scheduler.rate", () -> 1000000);
         registry.add("app.scheduler.delay", () -> 1000000);
     }

@@ -1,0 +1,9 @@
+spring:
+  cloud:
+    stream:
+      kafka:
+        binder:
+          configuration:
+            security.protocol: PLAINTEXT
+            sasl.mechanism: ""
+            sasl.jaas.config: ""

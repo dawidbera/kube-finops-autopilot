@@ -57,7 +57,7 @@ class GitOpsBotIntegrationTest {
             git.commit().setMessage("Initial commit").call();
             
             // Create the directory structure the bot expects
-            Path devDir = tempGitOrigin.resolve("smarthealth-gitops").resolve("test-ns");
+            Path devDir = tempGitOrigin.resolve("test-ns");
             Files.createDirectories(devDir);
             Files.writeString(devDir.resolve("nginx-app.yaml"), """
                     apiVersion: apps/v1
@@ -102,7 +102,7 @@ class GitOpsBotIntegrationTest {
                 
                 // Checkout that branch and check file
                 git.checkout().setName(branchName).call();
-                Path expectedFile = tempGitOrigin.resolve("smarthealth-gitops").resolve("test-ns").resolve("nginx-app.yaml");
+                Path expectedFile = tempGitOrigin.resolve("test-ns").resolve("nginx-app.yaml");
                 assertThat(Files.exists(expectedFile)).isTrue();
                 String content = Files.readString(expectedFile);
                 assertThat(content).contains("cpu: 300m");
