@@ -24,6 +24,13 @@ public class RecommendationApprovedListener {
 
     private static final String PR_CREATED_BINDING = "prCreated-out-0";
 
+    /**
+     * Handles the RecommendationApprovedEvent.
+     * It performs the GitOps workflow: clones the repo, creates a branch, updates the manifest,
+     * commits/pushes the changes, and simulates a Pull Request creation.
+     *
+     * @return A Consumer that processes the event.
+     */
     @Bean
     public Consumer<RecommendationApprovedEvent> handleApprovedRecommendation() {
         return event -> {

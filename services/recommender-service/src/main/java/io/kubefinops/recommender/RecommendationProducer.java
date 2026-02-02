@@ -23,6 +23,10 @@ public class RecommendationProducer {
     private final io.micrometer.core.instrument.MeterRegistry meterRegistry;
     private static final String BINDING_NAME = "recommendationCreated-out-0";
 
+    /**
+     * Periodically generates resource recommendations for workloads.
+     * Fetches usage metrics from Prometheus, calculates savings, and publishes a RecommendationCreatedEvent.
+     */
     @Scheduled(fixedRateString = "${app.scheduler.rate:30000}", initialDelayString = "${app.scheduler.delay:0}")
     public void generateRecommendation() {
         String namespace = "dev";

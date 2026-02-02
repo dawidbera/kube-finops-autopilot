@@ -20,18 +20,38 @@ public class PrometheusClient {
         this.webClient = webClientBuilder.baseUrl(prometheusUrl).build();
     }
 
+    /**
+     * Fetches the 95th percentile of CPU usage for a given deployment over the last 5 minutes.
+     *
+     * @param namespace  The namespace of the deployment.
+     * @param deployment The name of the deployment.
+     * @return A Mono emitting the CPU usage value.
+     */
     public Mono<Double> getP95CpuUsage(String namespace, String deployment) {
         String query = String.format("histogram_quantile(0.95, sum(rate(container_cpu_usage_seconds_total{namespace='%s', pod=~'%s-.*'}[5m])) by (le))", 
                 namespace, deployment);
         return queryPrometheus(query);
     }
 
+    /**
+     * Fetches the 95th percentile of memory working set bytes for a given deployment.
+     *
+     * @param namespace  The namespace of the deployment.
+     * @param deployment The name of the deployment.
+     * @return A Mono emitting the memory usage in bytes.
+     */
     public Mono<Double> getP95MemoryUsage(String namespace, String deployment) {
         String query = String.format("quantile(0.95, sum(container_memory_working_set_bytes{namespace='%s', pod=~'%s-.*'}) by (pod))", 
                 namespace, deployment);
         return queryPrometheus(query);
     }
 
+    /**
+     * Executes a PromQL query against the Prometheus API.
+     *
+     * @param query The PromQL query string.
+     * @return A Mono emitting the result value as a Double.
+     */
     private Mono<Double> queryPrometheus(String query) {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder

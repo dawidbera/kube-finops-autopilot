@@ -20,6 +20,14 @@ public class GitService {
 
     private final GitProperties gitProperties;
 
+    /**
+     * Clones the repository defined in properties or opens it if it already exists.
+     * If the directory exists but is not a valid repository, it is cleaned up and re-cloned.
+     *
+     * @return The Git object representing the repository.
+     * @throws GitAPIException If a Git error occurs.
+     * @throws IOException     If an I/O error occurs.
+     */
     public Git cloneOrOpenRepo() throws GitAPIException, IOException {
         File cloneDir = new File(gitProperties.getClonePath());
         File gitDir = new File(cloneDir, ".git");
@@ -46,6 +54,13 @@ public class GitService {
                 .call();
     }
 
+    /**
+     * Creates a new branch with the given name and checks it out.
+     *
+     * @param git        The Git object.
+     * @param branchName The name of the branch to create.
+     * @throws GitAPIException If a Git error occurs.
+     */
     public void createBranch(Git git, String branchName) throws GitAPIException {
         log.info("Creating and checking out branch: {}", branchName);
         git.checkout()
@@ -54,6 +69,13 @@ public class GitService {
                 .call();
     }
 
+    /**
+     * Commits all changes in the working directory and pushes them to the origin remote.
+     *
+     * @param git     The Git object.
+     * @param message The commit message.
+     * @throws GitAPIException If a Git error occurs.
+     */
     public void commitAndPush(Git git, String message) throws GitAPIException {
         log.info("Committing changes: {}", message);
         git.add().addFilepattern(".").call();
@@ -66,6 +88,9 @@ public class GitService {
                 .call();
     }
 
+    /**
+     * Deletes the local clone directory to clean up resources.
+     */
     public void cleanup() {
         File cloneDir = new File(gitProperties.getClonePath());
         if (cloneDir.exists()) {
@@ -73,6 +98,11 @@ public class GitService {
         }
     }
 
+    /**
+     * Creates a credentials provider using the configured username and password.
+     *
+     * @return The credentials provider, or null if credentials are not configured.
+     */
     private UsernamePasswordCredentialsProvider getCredentialsProvider() {
         if (gitProperties.getUsername() != null && gitProperties.getPassword() != null) {
             log.info("Using Git credentials for user: {}", gitProperties.getUsername());

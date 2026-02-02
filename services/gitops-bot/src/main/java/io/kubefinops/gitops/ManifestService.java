@@ -27,6 +27,18 @@ public class ManifestService {
         this.yamlMapper = new ObjectMapper(factory);
     }
 
+    /**
+     * Updates the Kubernetes manifest file for a specific workload with new resource limits, replicas, etc.
+     * It searches for the manifest file using common naming patterns.
+     *
+     * @param basePath    The base path of the git repository.
+     * @param workloadRef The reference to the workload (e.g., "deployment/my-app").
+     * @param namespace   The namespace of the workload.
+     * @param resources   The map of resource requirements to update (cpu, memory).
+     * @param replicas    The number of replicas to set (optional).
+     * @param savings     The estimated savings (for logging purposes).
+     * @param currency    The currency of the savings.
+     */
     public void updateManifest(String basePath, String workloadRef, String namespace, Map<String, String> resources, Integer replicas, Double savings, String currency) {
         try {
             String deploymentName = workloadRef.contains("/") ? workloadRef.split("/")[1] : workloadRef;
@@ -77,6 +89,13 @@ public class ManifestService {
         }
     }
 
+    /**
+     * Updates the resource requests and limits in the given JSON tree for the specified workload container.
+     *
+     * @param root         The root JSON node of the manifest.
+     * @param workloadName The name of the container/workload to update.
+     * @param resources    The map of new resource values.
+     */
     private void updateResources(JsonNode root, String workloadName, Map<String, String> resources) {
         JsonNode spec = root.path("spec");
         JsonNode template = spec.path("template");
@@ -101,6 +120,13 @@ public class ManifestService {
         }
     }
 
+    /**
+     * Updates a specific section (requests or limits) within the resources node.
+     *
+     * @param resourcesNode The JSON node representing the resources.
+     * @param section       The section to update ("requests" or "limits").
+     * @param resources     The map containing the new values.
+     */
     private void updateResourceSection(ObjectNode resourcesNode, String section, Map<String, String> resources) {
         ObjectNode sectionNode = resourcesNode.path(section).isMissingNode() ? 
                 resourcesNode.putObject(section) : (ObjectNode) resourcesNode.path(section);

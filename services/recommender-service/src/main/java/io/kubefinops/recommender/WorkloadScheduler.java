@@ -35,6 +35,14 @@ public class WorkloadScheduler {
         triggerScaling("dev", "nginx", 1, "Morning Wake Cycle (TEST)");
     }
 
+    /**
+     * Triggers a scaling event by sending a RecommendationCreatedEvent.
+     *
+     * @param namespace  The namespace of the workload.
+     * @param deployment The name of the deployment.
+     * @param replicas   The target number of replicas.
+     * @param reason     The reason for the scaling action.
+     */
     private void triggerScaling(String namespace, String deployment, Integer replicas, String reason) {
         log.info("Triggering {} for {}/{}", reason, namespace, deployment);
         

@@ -29,6 +29,15 @@ public class ReportService {
     @Value("${minio.bucket}")
     private String bucketName;
 
+    /**
+     * Generates a detailed JSON report for a recommendation, uploads it to MinIO (S3),
+     * and saves the metadata to the database.
+     *
+     * @param recommendationId The ID of the recommendation.
+     * @param workloadRef      The workload reference.
+     * @param suggested        The suggested resources.
+     * @param savings          The estimated savings.
+     */
     public void generateAndStoreReport(String recommendationId, String workloadRef, Map<String, String> suggested, Double savings) {
         log.info("Generating detailed report for recommendation: {}", recommendationId);
         

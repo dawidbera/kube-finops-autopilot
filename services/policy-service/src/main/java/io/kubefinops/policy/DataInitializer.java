@@ -14,6 +14,11 @@ public class DataInitializer implements CommandLineRunner {
 
     private final PolicyRepository policyRepository;
 
+    /**
+     * executed on application startup to seed default policies if the database is empty.
+     *
+     * @param args Command line arguments.
+     */
     @Override
     public void run(String... args) {
         if (policyRepository.count() == 0) {

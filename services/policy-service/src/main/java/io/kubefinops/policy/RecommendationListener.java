@@ -27,6 +27,13 @@ public class RecommendationListener {
     private static final String APPROVAL_BINDING = "recommendationApproved-out-0";
     private static final String VIOLATION_BINDING = "policyViolated-out-0";
 
+    /**
+     * Consumes RecommendationCreatedEvents and validates them against policies.
+     * If valid, it sends a RecommendationApprovedEvent; otherwise, a PolicyViolatedEvent.
+     * The result is also persisted to the database.
+     *
+     * @return A Consumer that processes the recommendation.
+     */
     @Bean
     public Consumer<RecommendationCreatedEvent> validateRecommendation() {
         return event -> {

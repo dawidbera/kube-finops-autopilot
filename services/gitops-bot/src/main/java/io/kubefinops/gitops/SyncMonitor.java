@@ -33,6 +33,11 @@ public class SyncMonitor {
         }
     }
 
+    /**
+     * Consumes RecommendationApprovedEvents to start monitoring the cluster for the application of changes.
+     *
+     * @return A Consumer that registers the event for monitoring.
+     */
     @Bean
     public Consumer<RecommendationApprovedEvent> monitorSync() {
         return event -> {
@@ -45,6 +50,10 @@ public class SyncMonitor {
         };
     }
 
+    /**
+     * periodically verifies if the pending recommendations have been applied to the cluster.
+     * Checks if the actual deployment state matches the recommended state.
+     */
     @Scheduled(fixedDelay = 10000) // Every 10 seconds
     public void verifyAppliedChanges() {
         if (kubernetesClient == null || pendingVerifications.isEmpty()) return;
@@ -82,6 +91,13 @@ public class SyncMonitor {
         });
     }
 
+    /**
+     * Checks if the deployment in the cluster matches the approved recommendation.
+     *
+     * @param deployment The Kubernetes deployment object.
+     * @param event      The approved recommendation event containing expected values.
+     * @return True if the deployment matches the recommendation, false otherwise.
+     */
     private boolean isSynchronized(Deployment deployment, RecommendationApprovedEvent event) {
         // 1. Check replicas
         if (event.getReplicas() != null) {
