@@ -1,42 +1,49 @@
+# Recommender Service Application Configuration
+# Purpose: Analyzes Prometheus metrics to identify cost optimization opportunities
+# Generates recommendations and publishes them to Kafka for policy validation
 server:
-  port: 8081
+  port: 8081  # Service port for metrics and health endpoints
 
 spring:
   application:
-    name: recommender-service
+    name: recommender-service  # Application identifier for logging and service discovery
   data:
     mongodb:
-      uri: mongodb://localhost:27017/kubefinops
+      uri: mongodb://localhost:27017/kubefinops  # MongoDB connection for storing analysis results
   cloud:
     stream:
       kafka:
         binder:
-          brokers: ${SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS:infra-kafka:9092}
+          brokers: ${SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS:infra-kafka:9092}  # Kafka bootstrap servers
           configuration:
-            security.protocol: SASL_PLAINTEXT
-            sasl.mechanism: SCRAM-SHA-256
+            security.protocol: SASL_PLAINTEXT  # SASL authentication enabled
+            sasl.mechanism: SCRAM-SHA-256  # SCRAM SHA-256 authentication
             sasl.jaas.config: org.apache.kafka.common.security.scram.ScramLoginModule required username="user1" password="password";
       bindings:
+        # Output channel: publishes generated recommendations to policy service
         recommendationCreated-out-0:
-          destination: recommendation.created
+          destination: recommendation.created  # Kafka topic for recommendations
           content-type: application/json
 
+# External service configurations
 prometheus:
-  url: http://localhost:9090
+  url: http://localhost:9090  # Prometheus server for metric queries
 
 minio:
-  url: http://localhost:9000
+  url: http://localhost:9000  # MinIO object storage for report persistence
   access-key: admin
   secret-key: password
   bucket: kubefinops-reports
 
+# Recommendation generation scheduling
 app:
   scheduler:
-    rate: 30000
-    delay: 5000
+    rate: 30000  # Generate recommendations every 30 seconds
+    delay: 5000  # Initial delay before first run
 
+# Actuator endpoints for monitoring
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,prometheus  # Expose metrics and health checks

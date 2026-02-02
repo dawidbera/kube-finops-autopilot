@@ -15,6 +15,14 @@ class ManifestServiceTest {
     @TempDir
     Path tempDir;
 
+    /**
+     * Unit test for ManifestService verifying that it correctly updates Kubernetes deployment manifests
+     * with recommended resource values. Tests:
+     * 1. Creates a temporary GitOps directory with a test deployment manifest
+     * 2. Updates the manifest with new resource requests (cpu: 250m, memory: 512Mi)
+     * 3. Verifies that the manifest is correctly modified to reflect the new values
+     * 4. Validates that replica count and resource limits are also updated
+     */
     @Test
     void shouldUpdateManifestYaml() throws IOException {
         // Given

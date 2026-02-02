@@ -1,10 +1,14 @@
+# Full development environment with all KubeFinOps infrastructure components
+# Includes Kafka message broker, MongoDB persistence, Prometheus metrics, Grafana dashboards
 services:
+  # Apache ZooKeeper - coordination service for Kafka broker
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
 
+  # Apache Kafka - event streaming platform for inter-service communication
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     depends_on:
@@ -24,6 +28,7 @@ services:
       timeout: 10s
       retries: 5
 
+  # MongoDB - NoSQL database for persisting recommendations and policies
   mongodb:
     image: mongo:6.0
     ports:
@@ -31,6 +36,7 @@ services:
     environment:
       MONGO_INITDB_DATABASE: kubefinops
 
+  # MinIO - S3-compatible object storage for report storage
   minio:
     image: minio/minio:latest
     ports:
@@ -41,6 +47,7 @@ services:
       MINIO_ROOT_PASSWORD: password
     command: server /data --console-address ":9001"
 
+  # Prometheus - metrics collection and storage for KubeFinOps services
   prometheus:
     image: prom/prometheus:latest
     ports:

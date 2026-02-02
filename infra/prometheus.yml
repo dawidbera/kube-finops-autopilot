@@ -1,21 +1,27 @@
+# Prometheus configuration for KubeFinOps Autopilot
+# Collects metrics from all microservices and infrastructure components
 global:
-  scrape_interval: 5s
+  scrape_interval: 5s  # Scrape metrics every 5 seconds
 
 scrape_configs:
+  # Prometheus self-monitoring
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
 
+  # Recommender service metrics (CPU/memory analysis, recommendations sent)
   - job_name: 'recommender-service'
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['recommender-service:8081']
 
+  # Policy service metrics (validations, approvals, rejections)
   - job_name: 'policy-service'
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['policy-service:8082']
 
+  # GitOps bot metrics (commits, pull requests, Git operations)
   - job_name: 'gitops-bot'
     metrics_path: '/actuator/prometheus'
     static_configs:

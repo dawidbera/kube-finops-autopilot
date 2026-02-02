@@ -1,23 +1,31 @@
+# Global configuration values for KubeFinOps Autopilot
+# These values are shared across all microservices in the platform
 global:
-  namespace: kubefinops
-  kafkaBootstrap: "infra-kafka:9092"
-  kafkaUser: "user1"
-  kafkaPassword: "468BhRv5hu"
-  mongoUri: "mongodb://infra-mongodb:27017/kubefinops"
+  namespace: kubefinops  # Kubernetes namespace for all deployments
+  kafkaBootstrap: "infra-kafka:9092"  # Kafka broker connection string for event streaming
+  kafkaUser: "user1"  # Kafka SASL username for authentication
+  kafkaPassword: "468BhRv5hu"  # Kafka SASL password for authentication
+  mongoUri: "mongodb://infra-mongodb:27017/kubefinops"  # MongoDB connection URI for persistence
 
+# Configuration for the Recommender Service
+# Responsibility: Fetches metrics from Prometheus, calculates recommendations, publishes events
 recommender:
   image: kubefinops/recommender-service:latest
   port: 8081
-  prometheusUrl: "http://infra-monitoring-kube-prom-prometheus:9090"
-  minioUrl: "http://infra-minio:9000"
+  prometheusUrl: "http://infra-monitoring-kube-prom-prometheus:9090"  # Prometheus instance for metrics
+  minioUrl: "http://infra-minio:9000"  # MinIO object storage for report storage
 
+# Configuration for the Policy Service
+# Responsibility: Validates recommendations against organizational policies, approves/rejects changes
 policy:
   image: kubefinops/policy-service:latest
   port: 8082
 
+# Configuration for the GitOps Bot
+# Responsibility: Commits and pushes approved recommendations to Git repositories as pull requests
 bot:
   image: kubefinops/gitops-bot:latest
   port: 8083
-  gitRepoUrl: "https://github.com/dawidbera/kube-finops-autopilot.git"
-  gitUser: "dawidbera"
+  gitRepoUrl: "https://github.com/dawidbera/kube-finops-autopilot.git"  # Target Git repository
+  gitUser: "dawidbera"  # Git user for committing changes
   gitToken: "YOUR_GITHUB_TOKEN" # Should be passed via --set at runtime

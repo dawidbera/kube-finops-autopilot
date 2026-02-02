@@ -28,6 +28,10 @@ class PolicyEngineTest {
     @InjectMocks
     private PolicyEngine policyEngine;
 
+    /**
+     * Unit test verifying that recommendations are approved when no policies are defined.
+     * When the repository returns no policies for a namespace, validation should pass.
+     */
     @Test
     void shouldApproveWhenNoPoliciesExist() {
         when(policyRepository.findByNamespaceOrNamespaceIsNull(anyString())).thenReturn(Collections.emptyList());
@@ -40,6 +44,10 @@ class PolicyEngineTest {
         assertTrue(policyEngine.validate(rec).isValid());
     }
 
+    /**
+     * Unit test verifying that recommendations are rejected when suggested CPU exceeds policy limit.
+     * Tests policy enforcement for CPU resource constraints.
+     */
     @Test
     void shouldRejectWhenCpuExceedsLimit() {
         Policy policy = Policy.builder()
@@ -57,6 +65,10 @@ class PolicyEngineTest {
         assertFalse(policyEngine.validate(rec).isValid());
     }
 
+    /**
+     * Unit test verifying that recommendations are approved when suggested CPU is within policy limits.
+     * Tests that valid CPU allocations pass policy validation.
+     */
     @Test
     void shouldApproveWhenCpuWithinLimit() {
         Policy policy = Policy.builder()
@@ -73,6 +85,10 @@ class PolicyEngineTest {
         assertTrue(policyEngine.validate(rec).isValid());
     }
 
+    /**
+     * Unit test verifying that recommendations are rejected when suggested memory exceeds policy limit.
+     * Tests policy enforcement for memory resource constraints.
+     */
     @Test
     void shouldRejectWhenMemoryExceedsLimit() {
         Policy policy = Policy.builder()
@@ -89,6 +105,10 @@ class PolicyEngineTest {
         assertFalse(policyEngine.validate(rec).isValid());
     }
 
+    /**
+     * Unit test verifying that recommendations are rejected when estimated monthly savings
+     * fall below the policy-defined minimum savings threshold.
+     */
     @Test
     void shouldRejectWhenSavingsBelowThreshold() {
         Policy policy = Policy.builder()
@@ -106,6 +126,10 @@ class PolicyEngineTest {
         assertFalse(policyEngine.validate(rec).isValid());
     }
 
+    /**
+     * Unit test verifying that recommendations are approved when estimated monthly savings
+     * meet or exceed the policy-defined minimum savings threshold.
+     */
     @Test
     void shouldApproveWhenSavingsAboveThreshold() {
         Policy policy = Policy.builder()

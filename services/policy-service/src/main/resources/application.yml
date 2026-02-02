@@ -1,40 +1,47 @@
+# Policy Service Application Configuration
+# Purpose: Validates cost optimization recommendations against organizational policies
+# Enforces CPU limits, memory limits, and minimum savings thresholds
 server:
-  port: 8082
+  port: 8082  # Service port for metrics and health endpoints
 
 spring:
   application:
-    name: policy-service
+    name: policy-service  # Application identifier for logging and service discovery
   data:
     mongodb:
-      uri: mongodb://localhost:27017/kubefinops
+      uri: mongodb://localhost:27017/kubefinops  # MongoDB connection for storing policies and validation results
   cloud:
     function:
-      definition: validateRecommendation
+      definition: validateRecommendation  # Enabled function bean
     stream:
       kafka:
         binder:
-          brokers: ${SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS:infra-kafka:9092}
+          brokers: ${SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS:infra-kafka:9092}  # Kafka bootstrap servers
           configuration:
-            security.protocol: SASL_PLAINTEXT
-            sasl.mechanism: SCRAM-SHA-256
+            security.protocol: SASL_PLAINTEXT  # SASL authentication enabled
+            sasl.mechanism: SCRAM-SHA-256  # SCRAM SHA-256 authentication
             sasl.jaas.config: org.apache.kafka.common.security.scram.ScramLoginModule required username="user1" password="password";
       bindings:
+        # Input channel: receives recommendations from recommender service
         validateRecommendation-in-0:
-          destination: recommendation.created
-          group: policy-group
+          destination: recommendation.created  # Kafka topic to consume from
+          group: policy-group  # Consumer group for load balancing
           content-type: application/json
+        # Output channel: publishes approved recommendations to GitOps bot
         recommendationApproved-out-0:
           destination: recommendation.approved
           content-type: application/json
+        # Output channel: publishes policy violations for audit
         policyViolated-out-0:
           destination: policy.violated
           content-type: application/json
 
+# Actuator endpoints for monitoring
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,prometheus  # Expose metrics and health checks
   metrics:
     tags:
       application: ${spring.application.name}

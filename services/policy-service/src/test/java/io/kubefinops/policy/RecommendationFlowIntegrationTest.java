@@ -58,6 +58,14 @@ class RecommendationFlowIntegrationTest {
     @Autowired
     private RecommendationRepository recommendationRepository;
 
+    /**
+     * Integration test verifying the complete recommendation flow through policy service:
+     * 1. Creates a RecommendationCreatedEvent with resource suggestions
+     * 2. Sets up a Kafka consumer to capture approval events
+     * 3. Sends the recommendation to the policy service for validation via Kafka
+     * 4. Verifies the recommendation is persisted to MongoDB with APPROVED status
+     * 5. Confirms that a RecommendationApprovedEvent is emitted back to Kafka
+     */
     @Test
     void shouldProcessRecommendationThroughWholeFlow() throws Exception {
         // 1. Prepare Event
@@ -93,6 +101,13 @@ class RecommendationFlowIntegrationTest {
         assertThat(approvedEvent.getWorkloadRef()).isEqualTo("deployment/test-app");
     }
 
+    /**
+     * Helper method to configure and start a Kafka consumer listening to the recommendation.approved topic.
+     * The consumer deserializes RecommendationApprovedEvent messages and adds them to the provided queue
+     * for test assertions.
+     *
+     * @param queue the blocking queue to receive deserialized approval events from Kafka
+     */
     private void setupApprovalConsumer(BlockingQueue<RecommendationApprovedEvent> queue) {
         Map<String, Object> consumerProps = Map.of(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers(),

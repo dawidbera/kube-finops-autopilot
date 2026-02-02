@@ -60,6 +60,14 @@ class RecommendationIntegrationTest {
     @Autowired
     private RecommendationProducer recommendationProducer;
 
+    /**
+     * Integration test verifying that the recommender service fetches metrics from Prometheus
+     * and sends a recommendation event to Kafka. Tests the complete flow:
+     * 1. Mocks a Prometheus endpoint to return CPU usage metrics
+     * 2. Sets up a Kafka consumer to capture the generated event
+     * 3. Triggers recommendation generation
+     * 4. Validates the generated event contains correct resource suggestions and savings estimate
+     */
     @Test
     void shouldFetchMetricsAndSendKafkaEvent() throws Exception {
         // 1. Mock Prometheus Response
@@ -86,6 +94,13 @@ class RecommendationIntegrationTest {
         assertThat(event.getEstimatedMonthlySavings()).isGreaterThan(0);
     }
 
+    /**
+     * Helper method to configure and start a Kafka consumer listening to the recommendation.created topic.
+     * The consumer deserializes RecommendationCreatedEvent messages and adds them to the provided queue
+     * for test assertions.
+     *
+     * @param queue the blocking queue to receive deserialized events from Kafka
+     */
     private void setupKafkaConsumer(BlockingQueue<RecommendationCreatedEvent> queue) {
         Map<String, Object> consumerProps = Map.of(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers(),

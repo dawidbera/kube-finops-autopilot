@@ -47,6 +47,14 @@ class GitOpsBotIntegrationTest {
     @Autowired
     private org.springframework.cloud.stream.function.StreamBridge streamBridge;
 
+    /**
+     * Integration test for GitOps bot verifying the complete GitOps workflow:
+     * 1. Initializes a test Git repository with initial manifests
+     * 2. Creates a RecommendationApprovedEvent with resource modifications
+     * 3. Sends the event through Kafka to the GitOps bot
+     * 4. Verifies that the bot creates a feature branch (fix/rightsize-*) with updated manifests
+     * 5. Confirms changes are committed and pushed to the Git repository
+     */
     @Test
     void shouldCommitAndPushWhenApprovedRecommendationReceived() throws Exception {
         // 0. Initialize "remote" repository

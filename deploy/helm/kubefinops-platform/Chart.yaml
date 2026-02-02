@@ -1,3 +1,8 @@
+# Helm Chart for KubeFinOps Autopilot Platform
+# Purpose: Deploys the complete KubeFinOps microservices stack including:
+#   - Recommender Service: Analyzes metrics and generates cost optimization recommendations
+#   - Policy Service: Validates recommendations against organizational policies
+#   - GitOps Bot: Automatically commits and pushes approved changes to Git repositories
 apiVersion: v2
 name: kubefinops-platform
 description: A Helm chart for KubeFinOps Autopilot microservices

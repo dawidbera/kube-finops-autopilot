@@ -1,10 +1,14 @@
+# Lightweight development environment for KubeFinOps testing
+# Includes essential services: Kafka, MongoDB, Prometheus, MinIO, Grafana with SASL authentication
 services:
+  # Apache ZooKeeper - coordination service for Kafka
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
 
+  # Apache Kafka - event streaming with SASL/SCRAM authentication enabled
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     depends_on:
@@ -23,6 +27,7 @@ services:
     volumes:
       - ./kafka_server_jaas.conf:/etc/kafka/secrets/kafka_server_jaas.conf
 
+  # MongoDB - NoSQL database for persisting recommendations and policies
   mongodb:
     image: mongo:6.0
     ports:
@@ -30,6 +35,7 @@ services:
     environment:
       MONGO_INITDB_DATABASE: kubefinops
 
+  # MinIO - S3-compatible object storage for reports
   minio:
     image: minio/minio:latest
     ports:
@@ -40,6 +46,7 @@ services:
       MINIO_ROOT_PASSWORD: password
     command: server /data --console-address ":9001"
 
+  # Prometheus - metrics collection and time-series database
   prometheus:
     image: prom/prometheus:latest
     ports:
@@ -49,13 +56,14 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  # Grafana - visualization and dashboarding for Prometheus metrics
   grafana:
     image: grafana/grafana:latest
     ports:
       - "3000:3000"
     environment:
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true  # Enable anonymous access for testing
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin  # Anonymous users have admin access
     volumes:
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
       - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards

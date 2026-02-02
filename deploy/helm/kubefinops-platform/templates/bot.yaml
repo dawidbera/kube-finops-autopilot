@@ -1,3 +1,6 @@
+# GitOps Bot Deployment
+# Purpose: Listens for approved recommendations from Kafka and automatically commits changes to Git repositories
+# Creates feature branches (fix/rightsize-*) with updated Kubernetes manifests based on cost optimization recommendations
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -37,6 +40,7 @@ spec:
         - name: GITOPS_GIT_TOKEN
           value: {{ .Values.bot.gitToken }}
 ---
+# Service to expose GitOps Bot metrics and health endpoints
 apiVersion: v1
 kind: Service
 metadata:

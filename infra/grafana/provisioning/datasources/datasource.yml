@@ -1,8 +1,10 @@
+# Grafana datasource configuration
+# Defines Prometheus as the primary datasource for KubeFinOps metrics visualization
 apiVersion: 1
 
 datasources:
-  - name: Prometheus
+  - name: Prometheus  # KubeFinOps metrics backend
     type: prometheus
     access: proxy
-    url: http://prometheus:9090
-    isDefault: true
+    url: http://prometheus:9090  # Prometheus server connection
+    isDefault: true  # Use as default datasource for new panels

@@ -1,9 +1,11 @@
+# Policy Service Test Profile Configuration
+# Overrides: Disables SASL authentication for integration testing with Testcontainers
 spring:
   cloud:
     stream:
       kafka:
         binder:
           configuration:
-            security.protocol: PLAINTEXT
+            security.protocol: PLAINTEXT  # Test environment uses PLAINTEXT without authentication
             sasl.mechanism: ""
             sasl.jaas.config: ""

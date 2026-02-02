@@ -1,3 +1,7 @@
+# Recommender Service Deployment
+# Purpose: Analyzes Prometheus metrics to identify cost optimization opportunities
+# Calculates CPU and memory recommendations based on P95 usage patterns
+# Estimates monthly savings and publishes recommendations via Kafka
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -37,6 +41,7 @@ spec:
         - name: MINIO_URL
           value: {{ .Values.recommender.minioUrl }}
 ---
+# Service to expose Recommender Service metrics and health endpoints
 apiVersion: v1
 kind: Service
 metadata:

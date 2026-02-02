@@ -1,3 +1,5 @@
+# Load generator deployment for KubeFinOps testing and metrics collection
+# Purpose: Generates sustained HTTP traffic to monitoring targets to simulate realistic workload patterns
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -25,6 +27,7 @@ spec:
             echo "Request sent to nginx...";
             sleep 0.5;
           done
+        # Minimal resource requests to avoid interfering with workload being tested
         resources:
           requests:
             cpu: "10m"

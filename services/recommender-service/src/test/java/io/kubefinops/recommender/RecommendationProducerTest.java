@@ -40,6 +40,14 @@ class RecommendationProducerTest {
     @InjectMocks
     private RecommendationProducer recommendationProducer;
 
+    /**
+     * Unit test for RecommendationProducer verifying the complete recommendation generation flow:
+     * 1. Mocks Prometheus client to return P95 CPU and memory usage metrics
+     * 2. Mocks cost calculator to return estimated monthly savings
+     * 3. Triggers recommendation generation
+     * 4. Verifies that the generated RecommendationCreatedEvent is sent to the correct Kafka topic
+     * 5. Validates the event contains correct namespace, workload reference, and savings amount
+     */
     @Test
     void shouldGenerateAndSendRecommendation() {
         // Given

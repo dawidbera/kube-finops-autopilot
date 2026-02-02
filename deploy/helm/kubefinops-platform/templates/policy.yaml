@@ -1,3 +1,7 @@
+# Policy Service Deployment
+# Purpose: Validates cost optimization recommendations against organizational policies
+# Enforces constraints on CPU limits, memory limits, and minimum savings thresholds
+# Persists approved/rejected recommendations to MongoDB for audit trail
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -33,6 +37,7 @@ spec:
         - name: SPRING_DATA_MONGODB_URI
           value: {{ .Values.global.mongoUri }}
 ---
+# Service to expose Policy Service metrics and health endpoints
 apiVersion: v1
 kind: Service
 metadata:

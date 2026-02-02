@@ -1,46 +1,52 @@
+# GitOps Bot Application Configuration
+# Purpose: Listens for approved recommendations and automates Git repository updates
 server:
-  port: 8083
+  port: 8083  # Service port for metrics and health endpoints
 
 spring:
   application:
-    name: gitops-bot
+    name: gitops-bot  # Application identifier for logging and Kafka consumer groups
   cloud:
     function:
-      definition: handleApprovedRecommendation;monitorSync
+      definition: handleApprovedRecommendation;monitorSync  # Enabled function beans
     stream:
       kafka:
         binder:
-          brokers: ${SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS:infra-kafka:9092}
+          brokers: ${SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS:infra-kafka:9092}  # Kafka bootstrap servers
           configuration:
-            security.protocol: SASL_PLAINTEXT
-            sasl.mechanism: SCRAM-SHA-256
+            security.protocol: SASL_PLAINTEXT  # SASL authentication enabled
+            sasl.mechanism: SCRAM-SHA-256  # SCRAM SHA-256 authentication
             sasl.jaas.config: org.apache.kafka.common.security.scram.ScramLoginModule required username="user1" password="password";
       bindings:
+        # Input channel: listens for approved recommendations from policy service
         handleApprovedRecommendation-in-0:
-          destination: recommendation.approved
-          group: gitops-bot-group
+          destination: recommendation.approved  # Kafka topic
+          group: gitops-bot-group  # Consumer group for load balancing
           content-type: application/json
+        # Secondary input: monitors sync status
         monitorSync-in-0:
           destination: recommendation.approved
           group: sync-monitor-group
           content-type: application/json
+        # Output channel: publishes pull request creation events
         prCreated-out-0:
           destination: gitops.pr.created
           content-type: application/json
+        # Output channel: publishes change applied events
         changeApplied-out-0:
           destination: change.applied
           content-type: application/json
 
 gitops:
   repo:
-    url: https://github.com/dawidbera/smarthealth-gitops.git
-    branch: master
-    username: ${GITOPS_GIT_USER:}
-    password: ${GITOPS_GIT_TOKEN:}
-    clone-path: /tmp/kubefinops-gitops-clone
+    url: https://github.com/dawidbera/smarthealth-gitops.git  # Target Git repository URL
+    branch: master  # Default branch for changes
+    username: ${GITOPS_GIT_USER:}  # Git user for authentication
+    password: ${GITOPS_GIT_TOKEN:}  # Git token/password for authentication
+    clone-path: /tmp/kubefinops-gitops-clone  # Local directory for Git repository clone
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,prometheus  # Expose metrics and health endpoints
