@@ -41,6 +41,12 @@
                 <artifactId>event-contract</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <!-- CVE-2025-27817: Apache Kafka Client SSRF vulnerability -->
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-clients</artifactId>
+                <version>3.9.1</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
